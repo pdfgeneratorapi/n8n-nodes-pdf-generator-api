@@ -1,24 +1,24 @@
 {
-  "name": "n8n-nodes-<...>",
+  "name": "n8n-nodes-pdf-generator-api",
   "version": "0.1.0",
-  "description": "",
+  "description": "PDF Generator API Node for n8n",
   "keywords": [
     "n8n-community-node-package"
   ],
   "license": "MIT",
-  "homepage": "",
+  "homepage": "https://pdfgeneratorapi.com/",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "Bruno Farias",
+    "email": "brunofarias@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/<...>/n8n-nodes-<...>.git"
+    "url": "https://github.com/bruno-farias/n8n-nodes-pdf-generator-api.git"
   },
   "engines": {
     "node": ">=20.15"
   },
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "npx rimraf dist && tsc && gulp build:icons",
     "dev": "tsc --watch",
@@ -34,14 +34,17 @@
     "n8nNodesApiVersion": 1,
     "credentials": [
       "dist/credentials/ExampleCredentialsApi.credentials.js",
-      "dist/credentials/HttpBinApi.credentials.js"
+      "dist/credentials/HttpBinApi.credentials.js",
+      "dist/credentials/PdfGeneratorApi.credentials.js"
     ],
     "nodes": [
       "dist/nodes/ExampleNode/ExampleNode.node.js",
-      "dist/nodes/HttpBin/HttpBin.node.js"
+      "dist/nodes/HttpBin/HttpBin.node.js",
+      "dist/nodes/PdfGeneratorApi/PdfGeneratorApi.node.js"
     ]
   },
   "devDependencies": {
+    "@types/node": "^22.15.30",
     "@typescript-eslint/parser": "~8.32.0",
     "eslint": "^8.57.0",
     "eslint-plugin-n8n-nodes-base": "^1.16.3",
