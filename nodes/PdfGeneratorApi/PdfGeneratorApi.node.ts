@@ -9,6 +9,7 @@ import type {
 	IRequestOptions,
 	INodeListSearchResult,
 } from 'n8n-workflow';
+
 import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
 
 export class PdfGeneratorApi implements INodeType {
@@ -47,6 +48,10 @@ export class PdfGeneratorApi implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
+						name: 'Conversion',
+						value: 'conversion',
+					},
+					{
 						name: 'Document',
 						value: 'document',
 					},
@@ -60,6 +65,34 @@ export class PdfGeneratorApi implements INodeType {
 					},
 				],
 				default: 'document',
+			},
+
+			// Conversion Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['conversion'],
+					},
+				},
+				options: [
+					{
+						name: 'HTML to PDF',
+						value: 'htmlToPdf',
+						description: 'Convert HTML content to PDF',
+						action: 'Convert HTML content to PDF',
+					},
+					{
+						name: 'URL to PDF',
+						value: 'urlToPdf',
+						description: 'Convert public URL to PDF',
+						action: 'Convert public URL to PDF',
+					},
+				],
+				default: 'htmlToPdf',
 			},
 
 			// Document Operations
@@ -875,6 +908,273 @@ export class PdfGeneratorApi implements INodeType {
 				default: '',
 				description: 'A unique identifier for the new workspace',
 			},
+
+			// HTML content for HTML to PDF conversion
+			{
+				displayName: 'HTML Content',
+				name: 'htmlContent',
+				type: 'string',
+				typeOptions: {
+					rows: 10,
+					validation: [
+						{
+							type: 'minLength',
+							properties: {
+								minLength: 10,
+								errorMessage: 'HTML content must be at least 10 characters long',
+							},
+						},
+					],
+				},
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['conversion'],
+						operation: ['htmlToPdf'],
+					},
+				},
+				default: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample PDF Document</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007acc;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .highlight {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-left: 4px solid #007acc;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sample PDF Document</h1>
+
+    <p>This is a sample HTML document that will be converted to PDF. You can customize this content with your own HTML, CSS, and data.</p>
+
+    <div class="highlight">
+        <strong>Tip:</strong> You can use CSS styles to format your PDF output with fonts, colors, layouts, and more.
+    </div>
+
+    <h2>Features</h2>
+    <ul>
+        <li>Custom fonts and styling</li>
+        <li>Tables and layouts</li>
+        <li>Images and graphics</li>
+        <li>Professional formatting</li>
+    </ul>
+
+    <h2>Sample Table</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Product A</td>
+                <td>High-quality product</td>
+                <td>$29.99</td>
+            </tr>
+            <tr>
+                <td>Product B</td>
+                <td>Premium service</td>
+                <td>$49.99</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p><em>Replace this content with your own HTML to generate custom PDFs.</em></p>
+</body>
+</html>`,
+				description: 'HTML content to convert to PDF. You can replace this sample with your own HTML.',
+			},
+
+			// URL for URL to PDF conversion
+			{
+				displayName: 'URL',
+				name: 'url',
+				type: 'string',
+				typeOptions: {
+					validation: [
+						{
+							type: 'regex',
+							properties: {
+								regex: '^https?:\\/\\/.+',
+								errorMessage: 'Please enter a valid URL starting with http:// or https://',
+							},
+						},
+					],
+				},
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['conversion'],
+						operation: ['urlToPdf'],
+					},
+				},
+				default: '',
+				description: 'Public URL to convert to PDF',
+				placeholder: 'https://example.com',
+			},
+
+			// Filename field for conversion operations
+			{
+				displayName: 'Filename',
+				name: 'filename',
+				type: 'string',
+				typeOptions: {
+					validation: [
+						{
+							type: 'minLength',
+							properties: {
+								minLength: 1,
+								errorMessage: 'Filename cannot be empty',
+							},
+						},
+						{
+							type: 'regex',
+							properties: {
+								regex: '^[a-zA-Z0-9._-]+$',
+								errorMessage: 'Filename can only contain letters, numbers, dots, hyphens, and underscores',
+							},
+						},
+					],
+				},
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['conversion'],
+					},
+				},
+				default: 'document',
+				description: 'Filename for the generated PDF (without .pdf extension)',
+				placeholder: 'my-document',
+			},
+
+			// Additional conversion options
+			{
+				displayName: 'Additional Options',
+				name: 'conversionOptions',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['conversion'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Paper Size',
+						name: 'paper_size',
+						type: 'options',
+						options: [
+							{
+								name: 'A0',
+								value: 'a0',
+							},
+							{
+								name: 'A1',
+								value: 'a1',
+							},
+							{
+								name: 'A2',
+								value: 'a2',
+							},
+							{
+								name: 'A3',
+								value: 'a3',
+							},
+							{
+								name: 'A4',
+								value: 'a4',
+							},
+							{
+								name: 'Legal',
+								value: 'legal',
+							},
+							{
+								name: 'Letter',
+								value: 'letter',
+							},
+							{
+								name: 'Tabloid',
+								value: 'tabloid',
+							},
+						],
+						default: 'a4',
+						description: 'PDF page size',
+					},
+					{
+						displayName: 'Orientation',
+						name: 'orientation',
+						type: 'options',
+						options: [
+							{
+								name: 'Portrait',
+								value: 'portrait',
+							},
+							{
+								name: 'Landscape',
+								value: 'landscape',
+							},
+						],
+						default: 'portrait',
+						description: 'Page orientation',
+					},
+					{
+						displayName: 'Output Format',
+						name: 'output',
+						type: 'options',
+										options: [
+					{
+						name: 'Base64 (JSON)',
+						value: 'base64',
+						description: 'Returns JSON response with base64 string',
+					},
+					{
+						name: 'File (Binary)',
+						value: 'file',
+						description: 'Returns binary file data for download/attachment',
+					},
+				],
+				default: 'base64',
+				description: 'Choose output format: JSON with base64 string or binary file',
+					},
+				],
+			},
 		],
 	};
 
@@ -941,7 +1241,138 @@ export class PdfGeneratorApi implements INodeType {
 			try {
 				let responseData;
 
-				if (resource === 'document') {
+				if (resource === 'conversion') {
+					const conversionOptions = this.getNodeParameter('conversionOptions', i, {}) as any;
+					const filename = this.getNodeParameter('filename', i) as string;
+
+					// Validate required fields
+					if (!filename || filename.trim() === '') {
+						throw new NodeOperationError(
+							this.getNode(),
+							'Filename is required for conversion operations',
+							{ itemIndex: i },
+						);
+					}
+
+					if (operation === 'htmlToPdf') {
+						const htmlContent = this.getNodeParameter('htmlContent', i) as string;
+						if (!htmlContent || htmlContent.trim() === '') {
+							throw new NodeOperationError(
+								this.getNode(),
+								'HTML Content is required for HTML to PDF conversion',
+								{ itemIndex: i },
+							);
+						}
+						if (htmlContent.length < 10) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'HTML Content must be at least 10 characters long',
+								{ itemIndex: i },
+							);
+						}
+					}
+
+					if (operation === 'urlToPdf') {
+						const url = this.getNodeParameter('url', i) as string;
+						if (!url || url.trim() === '') {
+							throw new NodeOperationError(
+								this.getNode(),
+								'URL is required for URL to PDF conversion',
+								{ itemIndex: i },
+							);
+						}
+						if (!url.match(/^https?:\/\/.+/)) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Please enter a valid URL starting with http:// or https://',
+								{ itemIndex: i },
+							);
+						}
+					}
+
+					// Build request body
+					const body: any = {
+						paper_size: conversionOptions.paper_size || 'a4',
+						orientation: conversionOptions.orientation || 'portrait',
+						output: conversionOptions.output || 'base64',
+						filename: filename || 'document',
+					};
+
+					if (operation === 'htmlToPdf') {
+						// HTML to PDF conversion
+						const htmlContent = this.getNodeParameter('htmlContent', i) as string;
+						body.content = htmlContent;
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/conversion/html2pdf',
+							body,
+							json: body.output !== 'file', // Don't parse as JSON when expecting raw binary
+							encoding: body.output === 'file' ? null : 'utf8', // Handle binary data correctly
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+					} else if (operation === 'urlToPdf') {
+						// URL to PDF conversion
+						const url = this.getNodeParameter('url', i) as string;
+						body.url = url;
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/conversion/url2pdf',
+							body,
+							json: body.output !== 'file', // Don't parse as JSON when expecting raw binary
+							encoding: body.output === 'file' ? null : 'utf8', // Handle binary data correctly
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+					}
+
+										// Handle output based on what the API actually returns
+					if (responseData) {
+						const outputFormat = body.output || 'base64';
+
+												if (outputFormat === 'file') {
+							// For file output, API returns raw binary PDF data
+							const binaryData: any = {};
+							const fileName = `${filename}.pdf`;
+
+							// When json=false and encoding=null, responseData is the raw binary buffer
+							const binaryBuffer = Buffer.isBuffer(responseData) ? responseData : Buffer.from(responseData);
+
+							console.log(`Raw PDF buffer size: ${binaryBuffer.length} bytes`);
+
+							binaryData[fileName] = await this.helpers.prepareBinaryData(
+								binaryBuffer,
+								fileName,
+								'application/pdf'
+							);
+
+							returnData.push({
+								json: {
+									success: true,
+									filename: `${filename}.pdf`,
+									format: outputFormat,
+									fileSize: binaryBuffer.length,
+								},
+								binary: binaryData,
+							});
+						} else {
+							// base64 and url formats return JSON only
+							returnData.push({
+								json: {
+									success: true,
+									filename: `${filename}.pdf`,
+									format: outputFormat,
+									...responseData,
+								},
+							});
+						}
+						continue;
+					}
+				} else if (resource === 'document') {
 					if (operation === 'list') {
 						// List documents
 						const listOptions = this.getNodeParameter('listOptions', i, {}) as any;
@@ -1017,10 +1448,51 @@ export class PdfGeneratorApi implements INodeType {
 							baseURL,
 							url: '/documents/generate',
 							body,
-							json: true,
+							json: output !== 'file', // Don't parse as JSON when expecting raw binary
+							encoding: output === 'file' ? null : 'utf8', // Handle binary data correctly
 						};
 
 						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+						// Handle output based on format for document generation
+						if (responseData && output !== 'url') {
+							if (output === 'file') {
+								// For file output, API returns raw binary data
+								const binaryData: any = {};
+								const fileName = `${additionalFields.outputName || 'document'}.${format}`;
+
+								// When json=false and encoding=null, responseData is the raw binary buffer
+								const binaryBuffer = Buffer.isBuffer(responseData) ? responseData : Buffer.from(responseData);
+
+								binaryData[fileName] = await this.helpers.prepareBinaryData(
+									binaryBuffer,
+									fileName,
+									format === 'pdf' ? 'application/pdf' : `application/${format}`
+								);
+
+								returnData.push({
+									json: {
+										success: true,
+										filename: fileName,
+										format: output,
+										fileSize: binaryBuffer.length,
+									},
+									binary: binaryData,
+								});
+								continue;
+							} else {
+								// base64 and url formats return JSON only
+								returnData.push({
+									json: {
+										success: true,
+										filename: `${additionalFields.outputName || 'document'}.${format}`,
+										format: output,
+										...responseData,
+									},
+								});
+								continue;
+							}
+						}
 
 					} else if (operation === 'generateAsync') {
 						// Generate PDF document asynchronously
@@ -1100,6 +1572,73 @@ export class PdfGeneratorApi implements INodeType {
 						};
 
 						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+						// Handle output based on format for batch generation
+						if (responseData && output !== 'url') {
+							if (output === 'file') {
+								// Only file format returns binary data
+								// Check if response data exists and handle different response structures
+								let fileData = responseData.response || responseData.data || responseData;
+
+								if (!fileData) {
+									throw new NodeOperationError(
+										this.getNode(),
+										`No file data received from API. Response structure: ${JSON.stringify(Object.keys(responseData))}`,
+										{ itemIndex: i },
+									);
+								}
+
+								const binaryData: any = {};
+								const fileName = `${additionalFields.outputName || 'batch-documents'}.${format}`;
+
+								// Handle different data formats
+								let binaryBuffer: Buffer;
+								if (typeof fileData === 'string') {
+									// If it's a base64 string, decode it
+									if (fileData.startsWith('data:')) {
+										// Handle data URI format
+										const base64Data = fileData.split(',')[1];
+										binaryBuffer = Buffer.from(base64Data, 'base64');
+									} else {
+										// Assume it's base64
+										binaryBuffer = Buffer.from(fileData, 'base64');
+									}
+								} else if (Buffer.isBuffer(fileData)) {
+									binaryBuffer = fileData;
+								} else {
+									// Try to convert to buffer assuming it's binary
+									binaryBuffer = Buffer.from(fileData);
+								}
+
+								binaryData[fileName] = await this.helpers.prepareBinaryData(
+									binaryBuffer,
+									fileName,
+									format === 'pdf' ? 'application/pdf' : `application/${format}`
+								);
+
+								returnData.push({
+									json: {
+										success: true,
+										filename: fileName,
+										format: output,
+										...responseData.meta,
+									},
+									binary: binaryData,
+								});
+								continue;
+							} else {
+								// base64 and url formats return JSON only
+								returnData.push({
+									json: {
+										success: true,
+										filename: `${additionalFields.outputName || 'batch-documents'}.${format}`,
+										format: output,
+										...responseData,
+									},
+								});
+								continue;
+							}
+						}
 
 					} else if (operation === 'generateBatchAsync') {
 						// Generate multiple PDF documents in batch asynchronously
