@@ -75,25 +75,223 @@ export class PdfGeneratorApi implements INodeType {
 				},
 				options: [
 					{
-						name: 'Generate PDF',
+						name: 'Delete',
+						value: 'delete',
+						description: 'Delete a document from storage',
+						action: 'Delete a document from storage',
+					},
+					{
+						name: 'Generate',
 						value: 'generate',
 						description: 'Generate a PDF document',
 						action: 'Generate a PDF document',
 					},
 					{
-						name: 'Generate PDF (Async)',
+						name: 'Generate (Async)',
 						value: 'generateAsync',
 						description: 'Generate a PDF document asynchronously',
 						action: 'Generate a PDF document asynchronously',
 					},
 					{
-						name: 'Get Output',
-						value: 'getOutput',
-						description: 'Get the output of an async generation',
-						action: 'Get the output of an async generation',
+						name: 'Generate (Batch)',
+						value: 'generateBatch',
+						description: 'Generate multiple PDF documents in batch',
+						action: 'Generate multiple PDF documents in batch',
+					},
+					{
+						name: 'Generate (Batch + Async)',
+						value: 'generateBatchAsync',
+						description: 'Generate multiple PDF documents in batch asynchronously',
+						action: 'Generate multiple PDF documents in batch asynchronously',
+					},
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Get a document by public ID',
+						action: 'Get a document by public ID',
+					},
+					{
+						name: 'List',
+						value: 'list',
+						description: 'List generated documents',
+						action: 'List generated documents',
 					},
 				],
 				default: 'generate',
+			},
+
+			// Document Public ID field for get and delete operations
+			{
+				displayName: 'Public ID',
+				name: 'publicId',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['document'],
+						operation: ['get', 'delete'],
+					},
+				},
+				default: '',
+				description: 'The public ID of the document',
+			},
+
+			// List options for document list operation
+			{
+				displayName: 'List Options',
+				name: 'listOptions',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['document'],
+						operation: ['list'],
+					},
+				},
+				options: [
+					{
+						displayName: 'End Date',
+						name: 'end_date',
+						type: 'string',
+						default: '',
+						description: 'End date filter (Format: Y-m-d H:i:s)',
+					},
+					{
+						displayName: 'Page',
+						name: 'page',
+						type: 'number',
+						typeOptions: {
+							minValue: 1,
+						},
+						default: 1,
+						description: 'Page number for pagination',
+					},
+					{
+						displayName: 'Per Page',
+						name: 'per_page',
+						type: 'number',
+						typeOptions: {
+							minValue: 1,
+							maxValue: 100,
+						},
+						default: 15,
+						description: 'Number of records per page',
+					},
+					{
+						displayName: 'Start Date',
+						name: 'start_date',
+						type: 'string',
+						default: '',
+						description: 'Start date filter (Format: Y-m-d H:i:s)',
+					},
+					{
+						displayName: 'Template ID',
+						name: 'template_id',
+						type: 'number',
+						default: '',
+						description: 'Filter by template ID',
+					},
+				],
+			},
+
+			// Templates array for batch operations
+			{
+				displayName: 'Templates',
+				name: 'templates',
+				type: 'fixedCollection',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['document'],
+						operation: ['generateBatch', 'generateBatchAsync'],
+					},
+				},
+				default: { templateList: [{}] },
+				typeOptions: {
+					multipleValues: true,
+				},
+				options: [
+					{
+						displayName: 'Template',
+						name: 'templateList',
+						values: [
+							{
+								displayName: 'Template',
+								name: 'templateId',
+								type: 'resourceLocator',
+								default: { mode: 'list', value: '' },
+								required: true,
+								modes: [
+									{
+										displayName: 'From List',
+										name: 'list',
+										type: 'list',
+										placeholder: 'Select a template...',
+										typeOptions: {
+											searchListMethod: 'searchTemplates',
+											searchable: true,
+										},
+									},
+									{
+										displayName: 'By ID',
+										name: 'id',
+										type: 'string',
+										validation: [
+											{
+												type: 'regex',
+												properties: {
+													regex: '^[0-9]+$',
+													errorMessage: 'Template ID must be a number',
+												},
+											},
+										],
+										placeholder: 'e.g. 12345',
+									},
+								],
+							},
+							{
+								displayName: 'Data',
+								name: 'data',
+								type: 'json',
+								required: true,
+								default: '{}',
+								description: 'JSON data to merge with the template',
+							},
+						],
+					},
+				],
+			},
+
+			// Callback URL for async operations
+			{
+				displayName: 'Callback Options',
+				name: 'callbackOptions',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['document'],
+						operation: ['generateAsync', 'generateBatchAsync'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Callback URL',
+						name: 'url',
+						type: 'string',
+						default: '',
+						description: 'URL to receive the callback when generation is complete',
+					},
+					{
+						displayName: 'Custom Headers',
+						name: 'headers',
+						type: 'json',
+						default: '{}',
+						description: 'Custom headers to include in the callback request',
+					},
+				],
 			},
 
 			// Template Operations
@@ -161,28 +359,6 @@ export class PdfGeneratorApi implements INodeType {
 						value: 'validate',
 						description: 'Validate template configuration',
 						action: 'Validate template configuration',
-					},
-				],
-				default: 'list',
-			},
-
-			// Workspace Operations
-			{
-				displayName: 'Operation',
-				name: 'operation',
-				type: 'options',
-				noDataExpression: true,
-				displayOptions: {
-					show: {
-						resource: ['workspace'],
-					},
-				},
-				options: [
-					{
-						name: 'List',
-						value: 'list',
-						description: 'Get all workspaces',
-						action: 'Get all workspaces',
 					},
 				],
 				default: 'list',
@@ -292,11 +468,12 @@ export class PdfGeneratorApi implements INodeType {
 				description: 'The ID of the async generation output',
 			},
 
-			// Data for PDF generation
+			// Data field for document generation (single template operations)
 			{
 				displayName: 'Data',
 				name: 'data',
 				type: 'json',
+				required: true,
 				displayOptions: {
 					show: {
 						resource: ['document'],
@@ -304,10 +481,10 @@ export class PdfGeneratorApi implements INodeType {
 					},
 				},
 				default: '{}',
-				description: 'The data to merge with the template',
+				description: 'JSON data to merge with the template',
 			},
 
-			// Format options
+			// Format field for document generation
 			{
 				displayName: 'Format',
 				name: 'format',
@@ -315,21 +492,119 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generate', 'generateAsync'],
+						operation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
 					},
 				},
 				options: [
+					{
+						name: 'HTML',
+						value: 'html',
+					},
 					{
 						name: 'PDF',
 						value: 'pdf',
 					},
 					{
-						name: 'HTML',
-						value: 'html',
+						name: 'XLSX',
+						value: 'xlsx',
+					},
+					{
+						name: 'ZIP',
+						value: 'zip',
 					},
 				],
 				default: 'pdf',
-				description: 'The output format',
+				description: 'Document format to generate',
+			},
+
+			// Output field for document generation
+			{
+				displayName: 'Output',
+				name: 'output',
+				type: 'options',
+				displayOptions: {
+					show: {
+						resource: ['document'],
+						operation: ['generate', 'generateBatch'],
+					},
+				},
+				options: [
+					{
+						name: 'Base64',
+						value: 'base64',
+						description: 'Return document as base64 encoded string',
+					},
+					{
+						name: 'File',
+						value: 'file',
+						description: 'Return document as file download',
+					},
+					{
+						name: 'URL',
+						value: 'url',
+						description: 'Return URL to document (stored for 30 days)',
+					},
+				],
+				default: 'base64',
+				description: 'How to return the generated document',
+			},
+
+			// Output field for async operations (no 'file' option)
+			{
+				displayName: 'Output',
+				name: 'output',
+				type: 'options',
+				displayOptions: {
+					show: {
+						resource: ['document'],
+						operation: ['generateAsync', 'generateBatchAsync'],
+					},
+				},
+				options: [
+					{
+						name: 'Base64',
+						value: 'base64',
+						description: 'Return document as base64 encoded string',
+					},
+					{
+						name: 'URL',
+						value: 'url',
+						description: 'Return URL to document (stored for 30 days)',
+					},
+				],
+				default: 'base64',
+				description: 'How to return the generated document',
+			},
+
+			// Additional fields for document generation
+			{
+				displayName: 'Additional Fields',
+				name: 'additionalFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['document'],
+						operation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Output Name',
+						name: 'outputName',
+						type: 'string',
+						default: '',
+						description: 'Generated document name (optional)',
+					},
+					{
+						displayName: 'Testing',
+						name: 'testing',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to use testing mode (generation is not counted but a large PREVIEW stamp is added)',
+					},
+				],
 			},
 
 			// Template name for create operation
@@ -434,83 +709,6 @@ export class PdfGeneratorApi implements INodeType {
 				],
 			},
 
-			// Additional options for document generation
-			{
-				displayName: 'Additional Fields',
-				name: 'additionalFields',
-				type: 'collection',
-				placeholder: 'Add Field',
-				default: {},
-				displayOptions: {
-					show: {
-						resource: ['document'],
-						operation: ['generate', 'generateAsync'],
-					},
-				},
-				options: [
-					{
-						displayName: 'Output Name',
-						name: 'outputName',
-						type: 'string',
-						default: '',
-						description: 'Name for the generated file',
-					},
-					{
-						displayName: 'Page Size',
-						name: 'pageSize',
-						type: 'options',
-						options: [
-							{ name: 'A3', value: 'A3' },
-							{ name: 'A4', value: 'A4' },
-							{ name: 'A5', value: 'A5' },
-							{ name: 'Legal', value: 'Legal' },
-							{ name: 'Letter', value: 'Letter' },
-						],
-						default: 'A4',
-						description: 'Page size for the PDF',
-					},
-					{
-						displayName: 'Orientation',
-						name: 'orientation',
-						type: 'options',
-						options: [
-							{ name: 'Portrait', value: 'portrait' },
-							{ name: 'Landscape', value: 'landscape' },
-						],
-						default: 'portrait',
-						description: 'Page orientation',
-					},
-					{
-						displayName: 'Margin Top',
-						name: 'marginTop',
-						type: 'number',
-						default: 0,
-						description: 'Top margin in pixels',
-					},
-					{
-						displayName: 'Margin Bottom',
-						name: 'marginBottom',
-						type: 'number',
-						default: 0,
-						description: 'Bottom margin in pixels',
-					},
-					{
-						displayName: 'Margin Left',
-						name: 'marginLeft',
-						type: 'number',
-						default: 0,
-						description: 'Left margin in pixels',
-					},
-					{
-						displayName: 'Margin Right',
-						name: 'marginRight',
-						type: 'number',
-						default: 0,
-						description: 'Right margin in pixels',
-					},
-				],
-			},
-
 			// Pagination and filtering options for template list
 			{
 				displayName: 'Options',
@@ -568,9 +766,31 @@ export class PdfGeneratorApi implements INodeType {
 				],
 			},
 
+			// Workspace Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['workspace'],
+					},
+				},
+				options: [
+					{
+						name: 'List',
+						value: 'list',
+						description: 'Get all workspaces',
+						action: 'Get all workspaces',
+					},
+				],
+				default: 'list',
+			},
+
 			// Pagination options for workspace list
 			{
-				displayName: 'Options',
+				displayName: 'List Options',
 				name: 'listOptions',
 				type: 'collection',
 				placeholder: 'Add Option',
@@ -586,15 +806,22 @@ export class PdfGeneratorApi implements INodeType {
 						displayName: 'Page',
 						name: 'page',
 						type: 'number',
+						typeOptions: {
+							minValue: 1,
+						},
 						default: 1,
-						description: 'Page number to return',
+						description: 'Page number for pagination',
 					},
 					{
 						displayName: 'Per Page',
 						name: 'per_page',
 						type: 'number',
+						typeOptions: {
+							minValue: 1,
+							maxValue: 100,
+						},
 						default: 15,
-						description: 'Number of records to return per page (max 100)',
+						description: 'Number of records per page',
 					},
 				],
 			},
@@ -665,28 +892,75 @@ export class PdfGeneratorApi implements INodeType {
 				let responseData;
 
 				if (resource === 'document') {
-					if (operation === 'generate') {
+					if (operation === 'list') {
+						// List documents
+						const listOptions = this.getNodeParameter('listOptions', i, {}) as any;
+
+						// Build query parameters
+						const qs: any = {};
+						if (listOptions.template_id) qs.template_id = listOptions.template_id;
+						if (listOptions.start_date) qs.start_date = listOptions.start_date;
+						if (listOptions.end_date) qs.end_date = listOptions.end_date;
+						if (listOptions.page) qs.page = listOptions.page;
+						if (listOptions.per_page) qs.per_page = listOptions.per_page;
+
+						const options: IRequestOptions = {
+							method: 'GET' as IHttpRequestMethods,
+							baseURL,
+							url: '/documents',
+							qs,
+							json: true,
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'get') {
+						// Get document by public ID
+						const publicId = this.getNodeParameter('publicId', i) as string;
+
+						const options: IRequestOptions = {
+							method: 'GET' as IHttpRequestMethods,
+							baseURL,
+							url: `/documents/${publicId}`,
+							json: true,
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'delete') {
+						// Delete document by public ID
+						const publicId = this.getNodeParameter('publicId', i) as string;
+
+						const options: IRequestOptions = {
+							method: 'DELETE' as IHttpRequestMethods,
+							baseURL,
+							url: `/documents/${publicId}`,
+							json: true,
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'generate') {
 						// Generate PDF document
 						const templateIdParam = this.getNodeParameter('templateId', i) as any;
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const data = this.getNodeParameter('data', i) as string;
 						const format = this.getNodeParameter('format', i, 'pdf') as string;
+						const output = this.getNodeParameter('output', i, 'base64') as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
 
 						const body: any = {
-							template_id: templateId,
-							data: JSON.parse(data),
+							template: {
+								id: templateId,
+								data: JSON.parse(data),
+							},
 							format,
+							output,
 						};
 
 						// Add additional options
 						if (additionalFields.outputName) body.name = additionalFields.outputName;
-						if (additionalFields.pageSize) body.page_size = additionalFields.pageSize;
-						if (additionalFields.orientation) body.orientation = additionalFields.orientation;
-						if (additionalFields.marginTop !== undefined) body.margin_top = additionalFields.marginTop;
-						if (additionalFields.marginBottom !== undefined) body.margin_bottom = additionalFields.marginBottom;
-						if (additionalFields.marginLeft !== undefined) body.margin_left = additionalFields.marginLeft;
-						if (additionalFields.marginRight !== undefined) body.margin_right = additionalFields.marginRight;
+						if (additionalFields.testing !== undefined) body.testing = additionalFields.testing;
 
 						const options: IRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
@@ -704,22 +978,32 @@ export class PdfGeneratorApi implements INodeType {
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const data = this.getNodeParameter('data', i) as string;
 						const format = this.getNodeParameter('format', i, 'pdf') as string;
+						const output = this.getNodeParameter('output', i, 'base64') as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
+						const callbackOptions = this.getNodeParameter('callbackOptions', i, {}) as any;
 
 						const body: any = {
-							template_id: templateId,
-							data: JSON.parse(data),
+							template: {
+								id: templateId,
+								data: JSON.parse(data),
+							},
 							format,
+							output,
 						};
+
+						// Add callback options
+						if (callbackOptions.url) {
+							body.callback = {
+								url: callbackOptions.url,
+							};
+							if (callbackOptions.headers) {
+								body.callback.headers = JSON.parse(callbackOptions.headers);
+							}
+						}
 
 						// Add additional options
 						if (additionalFields.outputName) body.name = additionalFields.outputName;
-						if (additionalFields.pageSize) body.page_size = additionalFields.pageSize;
-						if (additionalFields.orientation) body.orientation = additionalFields.orientation;
-						if (additionalFields.marginTop !== undefined) body.margin_top = additionalFields.marginTop;
-						if (additionalFields.marginBottom !== undefined) body.margin_bottom = additionalFields.marginBottom;
-						if (additionalFields.marginLeft !== undefined) body.margin_left = additionalFields.marginLeft;
-						if (additionalFields.marginRight !== undefined) body.margin_right = additionalFields.marginRight;
+						if (additionalFields.testing !== undefined) body.testing = additionalFields.testing;
 
 						const options: IRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
@@ -731,14 +1015,84 @@ export class PdfGeneratorApi implements INodeType {
 
 						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
 
-					} else if (operation === 'getOutput') {
-						// Get async generation output
-						const outputId = this.getNodeParameter('outputId', i) as string;
+					} else if (operation === 'generateBatch') {
+						// Generate multiple PDF documents in batch
+						const templates = this.getNodeParameter('templates', i) as any;
+						const format = this.getNodeParameter('format', i, 'pdf') as string;
+						const output = this.getNodeParameter('output', i, 'base64') as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
+
+						// Build templates array
+						const templateArray = templates.templateList.map((template: any) => {
+							const templateId = typeof template.templateId === 'string' ? template.templateId : template.templateId.value;
+							return {
+								id: templateId,
+								data: JSON.parse(template.data),
+							};
+						});
+
+						const body: any = {
+							template: templateArray,
+							format,
+							output,
+						};
+
+						// Add additional options
+						if (additionalFields.outputName) body.name = additionalFields.outputName;
+						if (additionalFields.testing !== undefined) body.testing = additionalFields.testing;
 
 						const options: IRequestOptions = {
-							method: 'GET' as IHttpRequestMethods,
+							method: 'POST' as IHttpRequestMethods,
 							baseURL,
-							url: `/documents/generate/async/${outputId}`,
+							url: '/documents/generate/batch',
+							body,
+							json: true,
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'generateBatchAsync') {
+						// Generate multiple PDF documents in batch asynchronously
+						const templates = this.getNodeParameter('templates', i) as any;
+						const format = this.getNodeParameter('format', i, 'pdf') as string;
+						const output = this.getNodeParameter('output', i, 'base64') as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
+						const callbackOptions = this.getNodeParameter('callbackOptions', i, {}) as any;
+
+						// Build templates array
+						const templateArray = templates.templateList.map((template: any) => {
+							const templateId = typeof template.templateId === 'string' ? template.templateId : template.templateId.value;
+							return {
+								id: templateId,
+								data: JSON.parse(template.data),
+							};
+						});
+
+						const body: any = {
+							template: templateArray,
+							format,
+							output,
+						};
+
+						// Add callback options
+						if (callbackOptions.url) {
+							body.callback = {
+								url: callbackOptions.url,
+							};
+							if (callbackOptions.headers) {
+								body.callback.headers = JSON.parse(callbackOptions.headers);
+							}
+						}
+
+						// Add additional options
+						if (additionalFields.outputName) body.name = additionalFields.outputName;
+						if (additionalFields.testing !== undefined) body.testing = additionalFields.testing;
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/documents/generate/batch/async',
+							body,
 							json: true,
 						};
 
@@ -957,3 +1311,6 @@ export class PdfGeneratorApi implements INodeType {
 		return [returnData];
 	}
 }
+
+
+
