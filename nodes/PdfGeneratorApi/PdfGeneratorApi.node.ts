@@ -1,10 +1,13 @@
 import type {
 	IExecuteFunctions,
+	ILoadOptionsFunctions,
 	INodeExecutionData,
+	INodePropertyOptions,
 	INodeType,
 	INodeTypeDescription,
 	IHttpRequestMethods,
 	IRequestOptions,
+	INodeListSearchResult,
 } from 'n8n-workflow';
 import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
 
@@ -34,6 +37,7 @@ export class PdfGeneratorApi implements INodeType {
 				'Content-Type': 'application/json',
 			},
 		},
+
 		properties: [
 			// Resource selection
 			{
@@ -184,11 +188,12 @@ export class PdfGeneratorApi implements INodeType {
 				default: 'list',
 			},
 
-			// Template ID field
+			// Template selector for document operations
 			{
-				displayName: 'Template ID',
+				displayName: 'Template',
 				name: 'templateId',
-				type: 'string',
+				type: 'resourceLocator',
+				default: { mode: 'list', value: '' },
 				required: true,
 				displayOptions: {
 					show: {
@@ -196,14 +201,43 @@ export class PdfGeneratorApi implements INodeType {
 						operation: ['generate', 'generateAsync'],
 					},
 				},
-				default: '',
-				description: 'The ID of the template to use for PDF generation',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						hint: 'Select a template from the list',
+						typeOptions: {
+							searchListMethod: 'searchTemplates',
+							searchable: true,
+							searchFilterRequired: false,
+						},
+					},
+					{
+						displayName: 'By ID',
+						name: 'id',
+						type: 'string',
+						hint: 'Enter the template ID directly',
+						validation: [
+							{
+								type: 'regex',
+								properties: {
+									regex: '^[0-9]+$',
+									errorMessage: 'Template ID must be a number',
+								},
+							},
+						],
+					},
+				],
+				description: 'Select the template to use for PDF generation',
 			},
 
+			// Template selector for template operations
 			{
-				displayName: 'Template ID',
+				displayName: 'Template',
 				name: 'templateId',
-				type: 'string',
+				type: 'resourceLocator',
+				default: { mode: 'list', value: '' },
 				required: true,
 				displayOptions: {
 					show: {
@@ -211,8 +245,35 @@ export class PdfGeneratorApi implements INodeType {
 						operation: ['get', 'update', 'delete', 'getDataFields', 'copy', 'openEditor'],
 					},
 				},
-				default: '',
-				description: 'The ID of the template',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						hint: 'Select a template from the list',
+						typeOptions: {
+							searchListMethod: 'searchTemplates',
+							searchable: true,
+							searchFilterRequired: false,
+						},
+					},
+					{
+						displayName: 'By ID',
+						name: 'id',
+						type: 'string',
+						hint: 'Enter the template ID directly',
+						validation: [
+							{
+								type: 'regex',
+								properties: {
+									regex: '^[0-9]+$',
+									errorMessage: 'Template ID must be a number',
+								},
+							},
+						],
+					},
+				],
+				description: 'Select the template to work with',
 			},
 
 			// Output ID field for async operations
@@ -540,6 +601,54 @@ export class PdfGeneratorApi implements INodeType {
 		],
 	};
 
+	methods = {
+		listSearch: {
+			async searchTemplates(this: ILoadOptionsFunctions, filter?: string): Promise<INodeListSearchResult> {
+				const returnData: INodePropertyOptions[] = [];
+
+				try {
+					const credentials = await this.getCredentials('pdfGeneratorApi');
+					const baseURL = (credentials.baseUrl as string) || 'https://us1.pdfgeneratorapi.com/api/v4';
+
+					const options: IRequestOptions = {
+						method: 'GET',
+						baseURL,
+						url: '/templates',
+						qs: {
+							per_page: 100,
+							...(filter && { name: filter }),
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					if (response && response.response) {
+						for (const template of response.response) {
+							const displayName = `${template.name} (ID: ${template.id})`;
+							// Filter by name if filter is provided
+							if (!filter || displayName.toLowerCase().includes(filter.toLowerCase())) {
+								returnData.push({
+									name: displayName,
+									value: template.id.toString(),
+								});
+							}
+						}
+					}
+				} catch (error) {
+					// If API call fails, return empty array
+					console.error('Failed to load templates:', error);
+				}
+
+				const sortedResults = returnData.sort((a, b) => a.name.localeCompare(b.name));
+
+				return {
+					results: sortedResults,
+				};
+			},
+		},
+	};
+
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
@@ -558,7 +667,8 @@ export class PdfGeneratorApi implements INodeType {
 				if (resource === 'document') {
 					if (operation === 'generate') {
 						// Generate PDF document
-						const templateId = this.getNodeParameter('templateId', i) as string;
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const data = this.getNodeParameter('data', i) as string;
 						const format = this.getNodeParameter('format', i, 'pdf') as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
@@ -590,7 +700,8 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'generateAsync') {
 						// Generate PDF document asynchronously
-						const templateId = this.getNodeParameter('templateId', i) as string;
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const data = this.getNodeParameter('data', i) as string;
 						const format = this.getNodeParameter('format', i, 'pdf') as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
@@ -659,7 +770,8 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'get') {
 						// Get template by ID
-						const templateId = this.getNodeParameter('templateId', i) as string;
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 
 						const options: IRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
@@ -692,7 +804,8 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'update') {
 						// Update existing template
-						const templateId = this.getNodeParameter('templateId', i) as string;
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const templateName = this.getNodeParameter('templateName', i) as string;
 						const templateDefinition = this.getNodeParameter('templateDefinition', i) as string;
 
@@ -713,7 +826,8 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'delete') {
 						// Delete template
-						const templateId = this.getNodeParameter('templateId', i) as string;
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 
 						const options: IRequestOptions = {
 							method: 'DELETE' as IHttpRequestMethods,
@@ -742,7 +856,8 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'getDataFields') {
 						// Get template data fields
-						const templateId = this.getNodeParameter('templateId', i) as string;
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 
 						const options: IRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
@@ -755,7 +870,8 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'copy') {
 						// Copy template
-						const templateId = this.getNodeParameter('templateId', i) as string;
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const newTemplateName = this.getNodeParameter('newTemplateName', i, '') as string;
 
 						const body: any = {};
@@ -773,7 +889,8 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'openEditor') {
 						// Open template editor
-						const templateId = this.getNodeParameter('templateId', i) as string;
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const editorOptions = this.getNodeParameter('editorOptions', i, {}) as any;
 
 						const body: any = {};
