@@ -779,6 +779,24 @@ export class PdfGeneratorApi implements INodeType {
 				},
 				options: [
 					{
+						name: 'Create',
+						value: 'create',
+						description: 'Create a new workspace',
+						action: 'Create a new workspace',
+					},
+					{
+						name: 'Delete',
+						value: 'delete',
+						description: 'Delete a workspace',
+						action: 'Delete a workspace',
+					},
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Get workspace by identifier',
+						action: 'Get workspace by identifier',
+					},
+					{
 						name: 'List',
 						value: 'list',
 						description: 'Get all workspaces',
@@ -824,6 +842,38 @@ export class PdfGeneratorApi implements INodeType {
 						description: 'Number of records per page',
 					},
 				],
+			},
+
+			// Workspace identifier for get and delete operations
+			{
+				displayName: 'Workspace Identifier',
+				name: 'workspaceIdentifier',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['workspace'],
+						operation: ['get', 'delete'],
+					},
+				},
+				default: '',
+				description: 'The workspace identifier (e.g., user.example@domain.com)',
+			},
+
+			// Workspace identifier for create operation
+			{
+				displayName: 'Identifier',
+				name: 'identifier',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['workspace'],
+						operation: ['create'],
+					},
+				},
+				default: '',
+				description: 'A unique identifier for the new workspace',
 			},
 		],
 	};
@@ -1277,6 +1327,50 @@ export class PdfGeneratorApi implements INodeType {
 							baseURL,
 							url: '/workspaces',
 							qs,
+							json: true,
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'create') {
+						// Create new workspace
+						const identifier = this.getNodeParameter('identifier', i) as string;
+
+						const body = {
+							identifier,
+						};
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/workspaces',
+							body,
+							json: true,
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'get') {
+						// Get workspace by identifier
+						const workspaceIdentifier = this.getNodeParameter('workspaceIdentifier', i) as string;
+
+						const options: IRequestOptions = {
+							method: 'GET' as IHttpRequestMethods,
+							baseURL,
+							url: `/workspaces/${encodeURIComponent(workspaceIdentifier)}`,
+							json: true,
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'delete') {
+						// Delete workspace
+						const workspaceIdentifier = this.getNodeParameter('workspaceIdentifier', i) as string;
+
+						const options: IRequestOptions = {
+							method: 'DELETE' as IHttpRequestMethods,
+							baseURL,
+							url: `/workspaces/${encodeURIComponent(workspaceIdentifier)}`,
 							json: true,
 						};
 
