@@ -295,7 +295,7 @@ export class PdfGeneratorApi implements INodeType {
 			{
 				displayName: 'Watermark Type',
 				name: 'watermarkType',
-				type: 'options',
+				type: 'multiOptions',
 				options: [
 					{
 						name: 'Text',
@@ -308,14 +308,14 @@ export class PdfGeneratorApi implements INodeType {
 						description: 'Add image watermark',
 					},
 				],
-				default: 'text',
+				default: ['text'],
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
 						pdfServicesOperation: ['addWatermark'],
 					},
 				},
-				description: 'Type of watermark to add',
+				description: 'Type of watermark to add (can select both text and image)',
 			},
 
 			// PDF Services: Watermark Text
@@ -323,16 +323,15 @@ export class PdfGeneratorApi implements INodeType {
 				displayName: 'Watermark Text',
 				name: 'watermarkText',
 				type: 'string',
-				required: true,
+				required: false,
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
 						pdfServicesOperation: ['addWatermark'],
-						watermarkType: ['text'],
 					},
 				},
-				default: 'CONFIDENTIAL',
-				description: 'Text to use as watermark',
+				default: '',
+				description: 'Text to use as watermark (required if Text is selected in Watermark Type)',
 				placeholder: 'CONFIDENTIAL',
 			},
 
@@ -341,23 +340,22 @@ export class PdfGeneratorApi implements INodeType {
 				displayName: 'Watermark Image URL',
 				name: 'watermarkImageUrl',
 				type: 'string',
-				required: true,
+				required: false,
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
 						pdfServicesOperation: ['addWatermark'],
-						watermarkType: ['image'],
 					},
 				},
 				default: '',
-				description: 'URL to image file to use as watermark',
+				description: 'URL to image file to use as watermark (required if Image is selected in Watermark Type)',
 				placeholder: 'https://example.com/watermark.png',
 			},
 
-			// PDF Services: Watermark Advanced Options
+			// PDF Services: Text Watermark Options
 			{
-				displayName: 'Advanced Watermark Options',
-				name: 'watermarkAdvanced',
+				displayName: 'Text Watermark Options',
+				name: 'textWatermarkOptions',
 				type: 'collection',
 				placeholder: 'Add Option',
 				default: {},
@@ -367,6 +365,111 @@ export class PdfGeneratorApi implements INodeType {
 						pdfServicesOperation: ['addWatermark'],
 					},
 				},
+				description: 'Additional options for text watermark',
+				options: [
+					{
+						displayName: 'Color',
+						name: 'color',
+						type: 'color',
+						default: '#000000',
+						description: 'Color of the text watermark',
+					},
+					{
+						displayName: 'Font Size',
+						name: 'size',
+						type: 'number',
+						typeOptions: {
+							minValue: 8,
+							maxValue: 200,
+						},
+						default: 48,
+						description: 'Font size of the text watermark',
+					},
+					{
+						displayName: 'Opacity',
+						name: 'opacity',
+						type: 'number',
+						typeOptions: {
+							minValue: 0,
+							maxValue: 1,
+							numberPrecision: 2,
+						},
+						default: 0.5,
+						description: 'Opacity of the text watermark (0 = transparent, 1 = opaque)',
+					},
+					{
+						displayName: 'Position',
+						name: 'position',
+						type: 'options',
+						options: [
+							{
+								name: 'Top Left',
+								value: 'top-left',
+							},
+							{
+								name: 'Top Center',
+								value: 'top-center',
+							},
+							{
+								name: 'Top Right',
+								value: 'top-right',
+							},
+							{
+								name: 'Center Left',
+								value: 'center-left',
+							},
+							{
+								name: 'Center',
+								value: 'center',
+							},
+							{
+								name: 'Center Right',
+								value: 'center-right',
+							},
+							{
+								name: 'Bottom Left',
+								value: 'bottom-left',
+							},
+							{
+								name: 'Bottom Center',
+								value: 'bottom-center',
+							},
+							{
+								name: 'Bottom Right',
+								value: 'bottom-right',
+							},
+						],
+						default: 'center',
+						description: 'Position of the text watermark on the page',
+					},
+					{
+						displayName: 'Rotation',
+						name: 'rotation',
+						type: 'number',
+						typeOptions: {
+							minValue: -180,
+							maxValue: 180,
+						},
+						default: 0,
+						description: 'Rotation angle in degrees (-180 to 180)',
+					},
+				],
+			},
+
+			// PDF Services: Image Watermark Options
+			{
+				displayName: 'Image Watermark Options',
+				name: 'imageWatermarkOptions',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['addWatermark'],
+					},
+				},
+				description: 'Additional options for image watermark',
 				options: [
 					{
 						displayName: 'Position',
@@ -411,32 +514,18 @@ export class PdfGeneratorApi implements INodeType {
 							},
 						],
 						default: 'center',
-						description: 'Position of the watermark on the page',
-					},
-					{
-						displayName: 'X Offset',
-						name: 'x',
-						type: 'number',
-						default: 0,
-						description: 'Horizontal offset in pixels from the position',
-					},
-					{
-						displayName: 'Y Offset',
-						name: 'y',
-						type: 'number',
-						default: 0,
-						description: 'Vertical offset in pixels from the position',
+						description: 'Position of the image watermark on the page',
 					},
 					{
 						displayName: 'Rotation',
 						name: 'rotation',
 						type: 'number',
 						typeOptions: {
-							minValue: -360,
-							maxValue: 360,
+							minValue: -180,
+							maxValue: 180,
 						},
 						default: 0,
-						description: 'Rotation angle in degrees (-360 to 360)',
+						description: 'Rotation angle in degrees (-180 to 180)',
 					},
 					{
 						displayName: 'Scale',
@@ -448,19 +537,7 @@ export class PdfGeneratorApi implements INodeType {
 							numberPrecision: 2,
 						},
 						default: 1,
-						description: 'Scale factor for the watermark (0.1 to 5)',
-					},
-					{
-						displayName: 'Opacity',
-						name: 'opacity',
-						type: 'number',
-						typeOptions: {
-							minValue: 0,
-							maxValue: 1,
-							numberPrecision: 2,
-						},
-						default: 0.5,
-						description: 'Opacity of the watermark (0 = transparent, 1 = opaque)',
+						description: 'Scale factor for the image watermark (0.1 to 5)',
 					},
 				],
 			},
@@ -2256,35 +2333,50 @@ export class PdfGeneratorApi implements INodeType {
 
 															if (operation === 'addWatermark') {
 						// Add watermark to PDF
-						const watermarkType = this.getNodeParameter('watermarkType', i) as string;
-						const watermarkAdvanced = this.getNodeParameter('watermarkAdvanced', i, {}) as any;
+						const watermarkTypes = this.getNodeParameter('watermarkType', i) as string[];
+						const textOptions = this.getNodeParameter('textWatermarkOptions', i, {}) as any;
+						const imageOptions = this.getNodeParameter('imageWatermarkOptions', i, {}) as any;
 
 						// Build watermark configuration object according to API spec
 						const watermark: any = {};
 
-						// Set watermark content based on type with proper nesting
-						if (watermarkType === 'text') {
+						// Add text watermark if selected
+						if (watermarkTypes.includes('text')) {
 							const textContent = this.getNodeParameter('watermarkText', i) as string;
+							if (!textContent) {
+								throw new NodeOperationError(this.getNode(), 'Watermark text is required when Text watermark type is selected');
+							}
 							watermark.text = {
 								content: textContent
 							};
 
-							// Add text-specific advanced options
-							if (watermarkAdvanced.color) watermark.text.color = watermarkAdvanced.color;
-							if (watermarkAdvanced.size !== undefined) watermark.text.size = watermarkAdvanced.size;
-							if (watermarkAdvanced.opacity !== undefined) watermark.text.opacity = watermarkAdvanced.opacity;
-							if (watermarkAdvanced.position) watermark.text.position = watermarkAdvanced.position;
-							if (watermarkAdvanced.rotation !== undefined) watermark.text.rotation = watermarkAdvanced.rotation;
-						} else {
+							// Add text-specific options
+							if (textOptions.color) watermark.text.color = textOptions.color;
+							if (textOptions.size !== undefined) watermark.text.size = textOptions.size;
+							if (textOptions.opacity !== undefined) watermark.text.opacity = textOptions.opacity;
+							if (textOptions.position) watermark.text.position = textOptions.position;
+							if (textOptions.rotation !== undefined) watermark.text.rotation = textOptions.rotation;
+						}
+
+						// Add image watermark if selected
+						if (watermarkTypes.includes('image')) {
 							const imageUrl = this.getNodeParameter('watermarkImageUrl', i) as string;
+							if (!imageUrl) {
+								throw new NodeOperationError(this.getNode(), 'Watermark image URL is required when Image watermark type is selected');
+							}
 							watermark.image = {
 								content_url: imageUrl
 							};
 
-							// Add image-specific advanced options
-							if (watermarkAdvanced.position) watermark.image.position = watermarkAdvanced.position;
-							if (watermarkAdvanced.rotation !== undefined) watermark.image.rotation = watermarkAdvanced.rotation;
-							if (watermarkAdvanced.scale !== undefined) watermark.image.scale = watermarkAdvanced.scale;
+							// Add image-specific options
+							if (imageOptions.position) watermark.image.position = imageOptions.position;
+							if (imageOptions.rotation !== undefined) watermark.image.rotation = imageOptions.rotation;
+							if (imageOptions.scale !== undefined) watermark.image.scale = imageOptions.scale;
+						}
+
+						// Validate that at least one watermark type is selected
+						if (!watermarkTypes.length || (!watermark.text && !watermark.image)) {
+							throw new NodeOperationError(this.getNode(), 'At least one watermark type (text or image) must be selected and configured');
 						}
 
 						// Add watermark object to body
