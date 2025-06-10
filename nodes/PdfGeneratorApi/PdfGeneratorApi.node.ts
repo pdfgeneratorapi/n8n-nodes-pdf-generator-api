@@ -2251,28 +2251,41 @@ export class PdfGeneratorApi implements INodeType {
 						body.file_base64 = this.getNodeParameter('fileBase64', i) as string;
 					}
 
+					// Add output format to body (required by API)
+					body.output = outputFormat;
+
 															if (operation === 'addWatermark') {
 						// Add watermark to PDF
 						const watermarkType = this.getNodeParameter('watermarkType', i) as string;
 						const watermarkAdvanced = this.getNodeParameter('watermarkAdvanced', i, {}) as any;
 
-						// Build watermark configuration object
+						// Build watermark configuration object according to API spec
 						const watermark: any = {};
 
-						// Set watermark content based on type
+						// Set watermark content based on type with proper nesting
 						if (watermarkType === 'text') {
-							watermark.text = this.getNodeParameter('watermarkText', i) as string;
-						} else {
-							watermark.image = this.getNodeParameter('watermarkImageUrl', i) as string;
-						}
+							const textContent = this.getNodeParameter('watermarkText', i) as string;
+							watermark.text = {
+								content: textContent
+							};
 
-						// Add advanced options if provided
-						if (watermarkAdvanced.position) watermark.position = watermarkAdvanced.position;
-						if (watermarkAdvanced.x !== undefined) watermark.x = watermarkAdvanced.x;
-						if (watermarkAdvanced.y !== undefined) watermark.y = watermarkAdvanced.y;
-						if (watermarkAdvanced.rotation !== undefined) watermark.rotation = watermarkAdvanced.rotation;
-						if (watermarkAdvanced.scale !== undefined) watermark.scale = watermarkAdvanced.scale;
-						if (watermarkAdvanced.opacity !== undefined) watermark.opacity = watermarkAdvanced.opacity;
+							// Add text-specific advanced options
+							if (watermarkAdvanced.color) watermark.text.color = watermarkAdvanced.color;
+							if (watermarkAdvanced.size !== undefined) watermark.text.size = watermarkAdvanced.size;
+							if (watermarkAdvanced.opacity !== undefined) watermark.text.opacity = watermarkAdvanced.opacity;
+							if (watermarkAdvanced.position) watermark.text.position = watermarkAdvanced.position;
+							if (watermarkAdvanced.rotation !== undefined) watermark.text.rotation = watermarkAdvanced.rotation;
+						} else {
+							const imageUrl = this.getNodeParameter('watermarkImageUrl', i) as string;
+							watermark.image = {
+								content_url: imageUrl
+							};
+
+							// Add image-specific advanced options
+							if (watermarkAdvanced.position) watermark.image.position = watermarkAdvanced.position;
+							if (watermarkAdvanced.rotation !== undefined) watermark.image.rotation = watermarkAdvanced.rotation;
+							if (watermarkAdvanced.scale !== undefined) watermark.image.scale = watermarkAdvanced.scale;
+						}
 
 						// Add watermark object to body
 						body.watermark = watermark;
@@ -2311,7 +2324,7 @@ export class PdfGeneratorApi implements INodeType {
 						// Decrypt PDF document
 						const decryptionPassword = this.getNodeParameter('decryptionPassword', i) as string;
 
-						if (decryptionPassword) body.password = decryptionPassword;
+						if (decryptionPassword) body.owner_password = decryptionPassword;
 
 						const options: IRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
