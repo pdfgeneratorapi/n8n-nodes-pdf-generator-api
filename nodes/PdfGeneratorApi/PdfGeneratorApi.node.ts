@@ -56,6 +56,10 @@ export class PdfGeneratorApi implements INodeType {
 						value: 'document',
 					},
 					{
+						name: 'PDF Services',
+						value: 'pdfServices',
+					},
+					{
 						name: 'Template',
 						value: 'template',
 					},
@@ -70,7 +74,7 @@ export class PdfGeneratorApi implements INodeType {
 			// Conversion Operations
 			{
 				displayName: 'Operation',
-				name: 'operation',
+				name: 'conversionOperation',
 				type: 'options',
 				noDataExpression: true,
 				displayOptions: {
@@ -98,7 +102,7 @@ export class PdfGeneratorApi implements INodeType {
 			// Document Operations
 			{
 				displayName: 'Operation',
-				name: 'operation',
+				name: 'documentOperation',
 				type: 'options',
 				noDataExpression: true,
 				displayOptions: {
@@ -153,6 +157,372 @@ export class PdfGeneratorApi implements INodeType {
 				default: 'generate',
 			},
 
+			// PDF Services Operations
+			{
+				displayName: 'Operation',
+				name: 'pdfServicesOperation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+					},
+				},
+				options: [
+					{
+						name: 'Add Watermark',
+						value: 'addWatermark',
+						description: 'Add text or image watermark to PDF document',
+						action: 'Add watermark to PDF document',
+					},
+					{
+						name: 'Decrypt Document',
+						value: 'decrypt',
+						description: 'Decrypt an encrypted PDF document',
+						action: 'Decrypt encrypted PDF document',
+					},
+					{
+						name: 'Encrypt Document',
+						value: 'encrypt',
+						description: 'Encrypt a PDF document with password protection',
+						action: 'Encrypt PDF document with password',
+					},
+					{
+						name: 'Optimize Document',
+						value: 'optimize',
+						description: 'Optimize PDF document size for better performance',
+						action: 'Optimize PDF document size',
+					},
+				],
+				default: 'addWatermark',
+			},
+
+			// PDF Services: PDF Source
+			{
+				displayName: 'PDF Source',
+				name: 'pdfSource',
+				type: 'options',
+				options: [
+					{
+						name: 'From URL',
+						value: 'url',
+						description: 'Use a PDF from a public URL',
+					},
+					{
+						name: 'From Base64',
+						value: 'base64',
+						description: 'Use a PDF from base64 encoded content',
+					},
+				],
+				default: 'url',
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+					},
+				},
+				description: 'Source of the PDF document to process',
+			},
+
+			// PDF Services: PDF URL
+			{
+				displayName: 'PDF URL',
+				name: 'fileUrl',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfSource: ['url'],
+					},
+				},
+				default: '',
+				description: 'Public URL to the PDF document',
+				placeholder: 'https://example.com/document.pdf',
+			},
+
+			// PDF Services: PDF Base64
+			{
+				displayName: 'PDF Base64',
+				name: 'fileBase64',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfSource: ['base64'],
+					},
+				},
+				default: '',
+				description: 'Base64 encoded PDF content',
+				placeholder: 'JVBERi0xLjQKJeLjz9MKMSAwIG9iago8...',
+			},
+
+			// PDF Services: Output Format
+			{
+				displayName: 'Output Format',
+				name: 'outputFormat',
+				type: 'options',
+				options: [
+					{
+						name: 'Base64 (JSON)',
+						value: 'base64',
+						description: 'Returns JSON response with base64 string',
+					},
+					{
+						name: 'File (Binary)',
+						value: 'file',
+						description: 'Returns binary file data for download/attachment',
+					},
+					{
+						name: 'URL (JSON)',
+						value: 'url',
+						description: 'Returns JSON response with download URL',
+					},
+				],
+				default: 'base64',
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+					},
+				},
+				description: 'Choose output format: JSON with base64 string, download URL, or binary file',
+			},
+
+			// PDF Services: Watermark Type
+			{
+				displayName: 'Watermark Type',
+				name: 'watermarkType',
+				type: 'options',
+				options: [
+					{
+						name: 'Text',
+						value: 'text',
+						description: 'Add text watermark',
+					},
+					{
+						name: 'Image',
+						value: 'image',
+						description: 'Add image watermark',
+					},
+				],
+				default: 'text',
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['addWatermark'],
+					},
+				},
+				description: 'Type of watermark to add',
+			},
+
+			// PDF Services: Watermark Text
+			{
+				displayName: 'Watermark Text',
+				name: 'watermarkText',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['addWatermark'],
+						watermarkType: ['text'],
+					},
+				},
+				default: 'CONFIDENTIAL',
+				description: 'Text to use as watermark',
+				placeholder: 'CONFIDENTIAL',
+			},
+
+			// PDF Services: Watermark Image URL
+			{
+				displayName: 'Watermark Image URL',
+				name: 'watermarkImageUrl',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['addWatermark'],
+						watermarkType: ['image'],
+					},
+				},
+				default: '',
+				description: 'URL to image file to use as watermark',
+				placeholder: 'https://example.com/watermark.png',
+			},
+
+			// PDF Services: Watermark Advanced Options
+			{
+				displayName: 'Advanced Watermark Options',
+				name: 'watermarkAdvanced',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['addWatermark'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Position',
+						name: 'position',
+						type: 'options',
+						options: [
+							{
+								name: 'Top Left',
+								value: 'top-left',
+							},
+							{
+								name: 'Top Center',
+								value: 'top-center',
+							},
+							{
+								name: 'Top Right',
+								value: 'top-right',
+							},
+							{
+								name: 'Center Left',
+								value: 'center-left',
+							},
+							{
+								name: 'Center',
+								value: 'center',
+							},
+							{
+								name: 'Center Right',
+								value: 'center-right',
+							},
+							{
+								name: 'Bottom Left',
+								value: 'bottom-left',
+							},
+							{
+								name: 'Bottom Center',
+								value: 'bottom-center',
+							},
+							{
+								name: 'Bottom Right',
+								value: 'bottom-right',
+							},
+						],
+						default: 'center',
+						description: 'Position of the watermark on the page',
+					},
+					{
+						displayName: 'X Offset',
+						name: 'x',
+						type: 'number',
+						default: 0,
+						description: 'Horizontal offset in pixels from the position',
+					},
+					{
+						displayName: 'Y Offset',
+						name: 'y',
+						type: 'number',
+						default: 0,
+						description: 'Vertical offset in pixels from the position',
+					},
+					{
+						displayName: 'Rotation',
+						name: 'rotation',
+						type: 'number',
+						typeOptions: {
+							minValue: -360,
+							maxValue: 360,
+						},
+						default: 0,
+						description: 'Rotation angle in degrees (-360 to 360)',
+					},
+					{
+						displayName: 'Scale',
+						name: 'scale',
+						type: 'number',
+						typeOptions: {
+							minValue: 0.1,
+							maxValue: 5,
+							numberPrecision: 2,
+						},
+						default: 1,
+						description: 'Scale factor for the watermark (0.1 to 5)',
+					},
+					{
+						displayName: 'Opacity',
+						name: 'opacity',
+						type: 'number',
+						typeOptions: {
+							minValue: 0,
+							maxValue: 1,
+							numberPrecision: 2,
+						},
+						default: 0.5,
+						description: 'Opacity of the watermark (0 = transparent, 1 = opaque)',
+					},
+				],
+			},
+
+			// PDF Services: Owner Password
+			{
+				displayName: 'Owner Password',
+				name: 'ownerPassword',
+				type: 'string',
+				typeOptions: {
+					password: true,
+				},
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['encrypt'],
+					},
+				},
+				default: '',
+				description: 'Owner password for full access to the PDF (optional but recommended)',
+				placeholder: 'Enter owner password',
+			},
+
+			// PDF Services: User Password
+			{
+				displayName: 'User Password',
+				name: 'userPassword',
+				type: 'string',
+				typeOptions: {
+					password: true,
+				},
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['encrypt'],
+					},
+				},
+				default: '',
+				description: 'User password for viewing the PDF (optional but recommended)',
+				placeholder: 'Enter user password',
+			},
+
+			// PDF Services: Decryption Password
+			{
+				displayName: 'Password',
+				name: 'decryptionPassword',
+				type: 'string',
+				typeOptions: {
+					password: true,
+				},
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['decrypt'],
+					},
+				},
+				default: '',
+				description: 'Password to decrypt the PDF document',
+				placeholder: 'Enter decryption password',
+			},
+
 			// Document Public ID field for get and delete operations
 			{
 				displayName: 'Public ID',
@@ -162,7 +532,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['get', 'delete'],
+						documentOperation: ['get', 'delete'],
 					},
 				},
 				default: '',
@@ -179,7 +549,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['list'],
+						documentOperation: ['list'],
 					},
 				},
 				options: [
@@ -237,7 +607,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generateBatch', 'generateBatchAsync'],
+						documentOperation: ['generateBatch', 'generateBatchAsync'],
 					},
 				},
 				default: { templateList: [{}] },
@@ -306,7 +676,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generateAsync', 'generateBatchAsync'],
+						documentOperation: ['generateAsync', 'generateBatchAsync'],
 					},
 				},
 				options: [
@@ -407,7 +777,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generate', 'generateAsync'],
+						documentOperation: ['generate', 'generateAsync'],
 					},
 				},
 				modes: [
@@ -494,7 +864,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['getOutput'],
+						documentOperation: ['getOutput'],
 					},
 				},
 				default: '',
@@ -510,7 +880,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generate', 'generateAsync'],
+						documentOperation: ['generate', 'generateAsync'],
 					},
 				},
 				default: '{}',
@@ -525,7 +895,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
+						documentOperation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
 					},
 				},
 				options: [
@@ -558,7 +928,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generate', 'generateBatch'],
+						documentOperation: ['generate', 'generateBatch'],
 					},
 				},
 				options: [
@@ -590,7 +960,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generateAsync', 'generateBatchAsync'],
+						documentOperation: ['generateAsync', 'generateBatchAsync'],
 					},
 				},
 				options: [
@@ -619,7 +989,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						operation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
+						documentOperation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
 					},
 				},
 				options: [
@@ -649,7 +1019,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						operation: ['create', 'update'],
+						documentOperation: ['create', 'update'],
 					},
 				},
 				default: '',
@@ -665,7 +1035,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						operation: ['create', 'update'],
+						documentOperation: ['create', 'update'],
 					},
 				},
 				default: '{}',
@@ -681,7 +1051,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						operation: ['validate'],
+						documentOperation: ['validate'],
 					},
 				},
 				default: '{}',
@@ -696,7 +1066,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						operation: ['copy'],
+						documentOperation: ['copy'],
 					},
 				},
 				default: '',
@@ -713,7 +1083,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						operation: ['openEditor'],
+						documentOperation: ['openEditor'],
 					},
 				},
 				options: [
@@ -752,7 +1122,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						operation: ['list'],
+						documentOperation: ['list'],
 					},
 				},
 				options: [
@@ -849,7 +1219,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['workspace'],
-						operation: ['list'],
+						documentOperation: ['list'],
 					},
 				},
 				options: [
@@ -886,7 +1256,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['workspace'],
-						operation: ['get', 'delete'],
+						documentOperation: ['get', 'delete'],
 					},
 				},
 				default: '',
@@ -902,7 +1272,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['workspace'],
-						operation: ['create'],
+						documentOperation: ['create'],
 					},
 				},
 				default: '',
@@ -1231,7 +1601,24 @@ export class PdfGeneratorApi implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 
 		const resource = this.getNodeParameter('resource', 0) as string;
-		const operation = this.getNodeParameter('operation', 0) as string;
+		let operation: string;
+
+		// Get the appropriate operation parameter based on the resource
+		switch (resource) {
+			case 'conversion':
+				operation = this.getNodeParameter('conversionOperation', 0) as string;
+				break;
+			case 'document':
+				operation = this.getNodeParameter('documentOperation', 0) as string;
+				break;
+			case 'pdfServices':
+				operation = this.getNodeParameter('pdfServicesOperation', 0) as string;
+				break;
+			case 'template':
+			case 'workspace':
+			default:
+				operation = this.getNodeParameter('operation', 0) as string;
+		}
 
 		// Get credentials to get the configurable baseURL
 		const credentials = await this.getCredentials('pdfGeneratorApi');
@@ -1849,6 +2236,145 @@ export class PdfGeneratorApi implements INodeType {
 						};
 
 						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+					}
+
+				} else if (resource === 'pdfServices') {
+					// PDF Services operations
+					const pdfSource = this.getNodeParameter('pdfSource', i) as string;
+					const outputFormat = this.getNodeParameter('outputFormat', i, 'base64') as string;
+
+					// Build request body with PDF source
+					const body: any = {};
+					if (pdfSource === 'url') {
+						body.file_url = this.getNodeParameter('fileUrl', i) as string;
+					} else {
+						body.file_base64 = this.getNodeParameter('fileBase64', i) as string;
+					}
+
+															if (operation === 'addWatermark') {
+						// Add watermark to PDF
+						const watermarkType = this.getNodeParameter('watermarkType', i) as string;
+						const watermarkAdvanced = this.getNodeParameter('watermarkAdvanced', i, {}) as any;
+
+						// Build watermark configuration object
+						const watermark: any = {};
+
+						// Set watermark content based on type
+						if (watermarkType === 'text') {
+							watermark.text = this.getNodeParameter('watermarkText', i) as string;
+						} else {
+							watermark.image = this.getNodeParameter('watermarkImageUrl', i) as string;
+						}
+
+						// Add advanced options if provided
+						if (watermarkAdvanced.position) watermark.position = watermarkAdvanced.position;
+						if (watermarkAdvanced.x !== undefined) watermark.x = watermarkAdvanced.x;
+						if (watermarkAdvanced.y !== undefined) watermark.y = watermarkAdvanced.y;
+						if (watermarkAdvanced.rotation !== undefined) watermark.rotation = watermarkAdvanced.rotation;
+						if (watermarkAdvanced.scale !== undefined) watermark.scale = watermarkAdvanced.scale;
+						if (watermarkAdvanced.opacity !== undefined) watermark.opacity = watermarkAdvanced.opacity;
+
+						// Add watermark object to body
+						body.watermark = watermark;
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/pdfservices/watermark',
+							body,
+							json: outputFormat !== 'file',
+							encoding: outputFormat === 'file' ? null : 'utf8',
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+										} else if (operation === 'encrypt') {
+						// Encrypt PDF document
+						const ownerPassword = this.getNodeParameter('ownerPassword', i) as string;
+						const userPassword = this.getNodeParameter('userPassword', i) as string;
+
+						if (ownerPassword) body.owner_password = ownerPassword;
+						if (userPassword) body.user_password = userPassword;
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/pdfservices/encrypt',
+							body,
+							json: outputFormat !== 'file',
+							encoding: outputFormat === 'file' ? null : 'utf8',
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+										} else if (operation === 'decrypt') {
+						// Decrypt PDF document
+						const decryptionPassword = this.getNodeParameter('decryptionPassword', i) as string;
+
+						if (decryptionPassword) body.password = decryptionPassword;
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/pdfservices/decrypt',
+							body,
+							json: outputFormat !== 'file',
+							encoding: outputFormat === 'file' ? null : 'utf8',
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'optimize') {
+						// Optimize PDF document
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/pdfservices/optimize',
+							body,
+							json: outputFormat !== 'file',
+							encoding: outputFormat === 'file' ? null : 'utf8',
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+					}
+
+					// Handle PDF Services response based on output format
+					if (responseData) {
+						if (outputFormat === 'file') {
+							// For file output, API returns raw binary PDF data
+							const binaryData: any = {};
+							const fileName = `processed-document.pdf`;
+
+							const binaryBuffer = Buffer.isBuffer(responseData) ? responseData : Buffer.from(responseData);
+
+							binaryData[fileName] = await this.helpers.prepareBinaryData(
+								binaryBuffer,
+								fileName,
+								'application/pdf'
+							);
+
+							returnData.push({
+								json: {
+									success: true,
+									operation,
+									filename: fileName,
+									format: outputFormat,
+									fileSize: binaryBuffer.length,
+								},
+								binary: binaryData,
+							});
+						} else {
+							// base64 and url formats return JSON only
+							returnData.push({
+								json: {
+									success: true,
+									operation,
+									format: outputFormat,
+									...responseData,
+								},
+							});
+						}
+						continue;
 					}
 
 				} else if (resource === 'workspace') {
