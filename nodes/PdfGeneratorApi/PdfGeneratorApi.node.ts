@@ -56,7 +56,7 @@ export class PdfGeneratorApi implements INodeType {
 						value: 'document',
 					},
 					{
-						name: 'PDF Services',
+						name: 'PDF Service',
 						value: 'pdfServices',
 					},
 					{
@@ -130,16 +130,16 @@ export class PdfGeneratorApi implements INodeType {
 						action: 'Generate a PDF document asynchronously',
 					},
 					{
-						name: 'Generate (Batch)',
-						value: 'generateBatch',
-						description: 'Generate multiple PDF documents in batch',
-						action: 'Generate multiple PDF documents in batch',
-					},
-					{
 						name: 'Generate (Batch + Async)',
 						value: 'generateBatchAsync',
 						description: 'Generate multiple PDF documents in batch asynchronously',
 						action: 'Generate multiple PDF documents in batch asynchronously',
+					},
+					{
+						name: 'Generate (Batch)',
+						value: 'generateBatch',
+						description: 'Generate multiple PDF documents in batch',
+						action: 'Generate multiple PDF documents in batch',
 					},
 					{
 						name: 'Get',
@@ -323,15 +323,15 @@ export class PdfGeneratorApi implements INodeType {
 				displayName: 'Watermark Text',
 				name: 'watermarkText',
 				type: 'string',
-				required: false,
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
 						pdfServicesOperation: ['addWatermark'],
+						watermarkType: ['text'],
 					},
 				},
 				default: 'CONFIDENTIAL',
-				description: 'Text to use as watermark (required if Text is selected in Watermark Type)',
+				description: 'Text to use as watermark',
 				placeholder: 'CONFIDENTIAL',
 			},
 
@@ -340,15 +340,15 @@ export class PdfGeneratorApi implements INodeType {
 				displayName: 'Watermark Image URL',
 				name: 'watermarkImageUrl',
 				type: 'string',
-				required: false,
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
 						pdfServicesOperation: ['addWatermark'],
+						watermarkType: ['image'],
 					},
 				},
 				default: '',
-				description: 'URL to image file to use as watermark (required if Image is selected in Watermark Type)',
+				description: 'URL to image file to use as watermark',
 				placeholder: 'https://example.com/watermark.png',
 			},
 
@@ -363,6 +363,7 @@ export class PdfGeneratorApi implements INodeType {
 					show: {
 						resource: ['pdfServices'],
 						pdfServicesOperation: ['addWatermark'],
+						watermarkType: ['text'],
 					},
 				},
 				description: 'Additional options for text watermark',
@@ -467,6 +468,7 @@ export class PdfGeneratorApi implements INodeType {
 					show: {
 						resource: ['pdfServices'],
 						pdfServicesOperation: ['addWatermark'],
+						watermarkType: ['image'],
 					},
 				},
 				description: 'Additional options for image watermark',
@@ -477,40 +479,40 @@ export class PdfGeneratorApi implements INodeType {
 						type: 'options',
 						options: [
 							{
-								name: 'Top Left',
-								value: 'top-left',
-							},
-							{
-								name: 'Top Center',
-								value: 'top-center',
-							},
-							{
-								name: 'Top Right',
-								value: 'top-right',
-							},
-							{
-								name: 'Center Left',
-								value: 'center-left',
-							},
-							{
-								name: 'Center',
-								value: 'center',
-							},
-							{
-								name: 'Center Right',
-								value: 'center-right',
+								name: 'Bottom Center',
+								value: 'bottom-center',
 							},
 							{
 								name: 'Bottom Left',
 								value: 'bottom-left',
 							},
 							{
-								name: 'Bottom Center',
-								value: 'bottom-center',
-							},
-							{
 								name: 'Bottom Right',
 								value: 'bottom-right',
+							},
+							{
+								name: 'Center',
+								value: 'center',
+							},
+							{
+								name: 'Center Left',
+								value: 'center-left',
+							},
+							{
+								name: 'Center Right',
+								value: 'center-right',
+							},
+							{
+								name: 'Top Center',
+								value: 'top-center',
+							},
+							{
+								name: 'Top Left',
+								value: 'top-left',
+							},
+							{
+								name: 'Top Right',
+								value: 'top-right',
 							},
 						],
 						default: 'center',
@@ -977,24 +979,24 @@ export class PdfGeneratorApi implements INodeType {
 				},
 				options: [
 					{
-						name: 'HTML',
-						value: 'html',
-					},
-					{
 						name: 'PDF',
 						value: 'pdf',
 					},
 					{
-						name: 'XLSX',
-						value: 'xlsx',
+						name: 'HTML',
+						value: 'html',
 					},
 					{
 						name: 'ZIP',
 						value: 'zip',
 					},
+					{
+						name: 'XLSX',
+						value: 'xlsx',
+					},
 				],
 				default: 'pdf',
-				description: 'Document format to generate',
+				description: 'Document format. ZIP option returns a ZIP file with PDF files.',
 			},
 
 			// Output field for document generation
@@ -1012,24 +1014,21 @@ export class PdfGeneratorApi implements INodeType {
 					{
 						name: 'Base64',
 						value: 'base64',
-						description: 'Return document as base64 encoded string',
 					},
 					{
 						name: 'File',
 						value: 'file',
-						description: 'Return document as file download',
 					},
 					{
 						name: 'URL',
 						value: 'url',
-						description: 'Return URL to document (stored for 30 days)',
 					},
 				],
 				default: 'base64',
-				description: 'How to return the generated document',
+				description: 'Response format. File option returns the file inline. URL option stores document for 30 days.',
 			},
 
-			// Output field for async operations (no 'file' option)
+			// Output field for async document generation
 			{
 				displayName: 'Output',
 				name: 'output',
@@ -1044,16 +1043,14 @@ export class PdfGeneratorApi implements INodeType {
 					{
 						name: 'Base64',
 						value: 'base64',
-						description: 'Return document as base64 encoded string',
 					},
 					{
 						name: 'URL',
 						value: 'url',
-						description: 'Return URL to document (stored for 30 days)',
 					},
 				],
 				default: 'base64',
-				description: 'How to return the generated document',
+				description: 'Response format. URL option stores document for 30 days.',
 			},
 
 			// Additional fields for document generation
@@ -1087,36 +1084,20 @@ export class PdfGeneratorApi implements INodeType {
 				],
 			},
 
-			// Template name for create operation
+			// Template configuration for create/update operations
 			{
-				displayName: 'Template Name',
-				name: 'templateName',
-				type: 'string',
-				required: true,
-				displayOptions: {
-					show: {
-						resource: ['template'],
-						documentOperation: ['create', 'update'],
-					},
-				},
-				default: '',
-				description: 'The name of the template',
-			},
-
-			// Template definition for create/update operations
-			{
-				displayName: 'Template Definition',
-				name: 'templateDefinition',
+				displayName: 'Template Configuration',
+				name: 'templateConfiguration',
 				type: 'json',
 				required: true,
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						documentOperation: ['create', 'update'],
+						operation: ['create', 'update'],
 					},
 				},
-				default: '{}',
-				description: 'The JSON template definition',
+				default: '{\n  "name": "My Template",\n  "tags": [],\n  "isDraft": true,\n  "layout": {\n    "format": "A4",\n    "width": 21,\n    "height": 29.7,\n    "unit": "cm",\n    "orientation": "portrait",\n    "rotation": 0,\n    "margins": {\n      "top": 0.5,\n      "right": 0.5,\n      "bottom": 0.5,\n      "left": 0.5\n    }\n  },\n  "pages": [],\n  "dataSettings": {},\n  "editor": {},\n  "fontSubsetting": false,\n  "barcodeAsImage": false\n}',
+				description: 'The complete template configuration JSON. For create operation, the name from this object will be used.',
 			},
 
 			// Template configuration for validate operation
@@ -1128,10 +1109,10 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						documentOperation: ['validate'],
+						operation: ['validate'],
 					},
 				},
-				default: '{}',
+				default: '{\n  "name": "My Template",\n  "tags": [],\n  "isDraft": true,\n  "layout": {\n    "format": "A4",\n    "width": 21,\n    "height": 29.7,\n    "unit": "cm",\n    "orientation": "portrait",\n    "rotation": 0,\n    "margins": {\n      "top": 0.5,\n      "right": 0.5,\n      "bottom": 0.5,\n      "left": 0.5\n    }\n  },\n  "pages": [],\n  "dataSettings": {},\n  "editor": {},\n  "fontSubsetting": false,\n  "barcodeAsImage": false\n}',
 				description: 'Template configuration to validate',
 			},
 
@@ -1143,7 +1124,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						documentOperation: ['copy'],
+						operation: ['copy'],
 					},
 				},
 				default: '',
@@ -1160,7 +1141,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						documentOperation: ['openEditor'],
+						operation: ['openEditor'],
 					},
 				},
 				options: [
@@ -1191,7 +1172,7 @@ export class PdfGeneratorApi implements INodeType {
 
 			// Pagination and filtering options for template list
 			{
-				displayName: 'Options',
+				displayName: 'List Options',
 				name: 'listOptions',
 				type: 'collection',
 				placeholder: 'Add Option',
@@ -1199,35 +1180,28 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['template'],
-						documentOperation: ['list'],
+						operation: ['list'],
 					},
 				},
 				options: [
-					{
-						displayName: 'Name Filter',
-						name: 'name',
-						type: 'string',
-						default: '',
-						description: 'Filter templates by name',
-					},
-					{
-						displayName: 'Tags Filter',
-						name: 'tags',
-						type: 'string',
-						default: '',
-						description: 'Filter templates by tags',
-					},
 					{
 						displayName: 'Access Type',
 						name: 'access',
 						type: 'options',
 						options: [
 							{ name: 'All', value: '' },
-							{ name: 'Private', value: 'private' },
 							{ name: 'Organization', value: 'organization' },
+							{ name: 'Private', value: 'private' },
 						],
 						default: '',
 						description: 'Filter templates by access type',
+					},
+					{
+						displayName: 'Name Filter',
+						name: 'name',
+						type: 'string',
+						default: '',
+						description: 'Filter templates by name',
 					},
 					{
 						displayName: 'Page',
@@ -1242,6 +1216,13 @@ export class PdfGeneratorApi implements INodeType {
 						type: 'number',
 						default: 15,
 						description: 'Number of records to return per page (max 100)',
+					},
+					{
+						displayName: 'Tags Filter',
+						name: 'tags',
+						type: 'string',
+						default: '',
+						description: 'Filter templates by tags',
 					},
 				],
 			},
@@ -2199,13 +2180,9 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'create') {
 						// Create new template
-						const templateName = this.getNodeParameter('templateName', i) as string;
-						const templateDefinition = this.getNodeParameter('templateDefinition', i) as string;
+						const templateConfiguration = this.getNodeParameter('templateConfiguration', i) as string;
 
-						const body = {
-							name: templateName,
-							...JSON.parse(templateDefinition),
-						};
+						const body = JSON.parse(templateConfiguration);
 
 						const options: IRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
@@ -2221,13 +2198,9 @@ export class PdfGeneratorApi implements INodeType {
 						// Update existing template
 						const templateIdParam = this.getNodeParameter('templateId', i) as any;
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
-						const templateName = this.getNodeParameter('templateName', i) as string;
-						const templateDefinition = this.getNodeParameter('templateDefinition', i) as string;
+						const templateConfiguration = this.getNodeParameter('templateConfiguration', i) as string;
 
-						const body = {
-							name: templateName,
-							...JSON.parse(templateDefinition),
-						};
+						const body = JSON.parse(templateConfiguration);
 
 						const options: IRequestOptions = {
 							method: 'PUT' as IHttpRequestMethods,
@@ -2602,14 +2575,7 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
-
-						// For delete operations, API returns 204 No Content on success
-						responseData = {
-							success: true,
-							message: 'Workspace deleted successfully',
-							workspaceIdentifier: workspaceIdentifier,
-						};
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
 					}
 				}
 
