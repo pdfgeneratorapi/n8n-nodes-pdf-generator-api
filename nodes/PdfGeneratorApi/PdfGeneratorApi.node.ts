@@ -1296,7 +1296,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['workspace'],
-						documentOperation: ['list'],
+						operation: ['list'],
 					},
 				},
 				options: [
@@ -1333,7 +1333,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['workspace'],
-						documentOperation: ['get', 'delete'],
+						operation: ['get', 'delete'],
 					},
 				},
 				default: '',
@@ -1349,7 +1349,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['workspace'],
-						documentOperation: ['create'],
+						operation: ['create'],
 					},
 				},
 				default: '',
