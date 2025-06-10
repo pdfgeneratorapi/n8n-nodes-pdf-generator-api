@@ -330,7 +330,7 @@ export class PdfGeneratorApi implements INodeType {
 						pdfServicesOperation: ['addWatermark'],
 					},
 				},
-				default: '',
+				default: 'CONFIDENTIAL',
 				description: 'Text to use as watermark (required if Text is selected in Watermark Type)',
 				placeholder: 'CONFIDENTIAL',
 			},
@@ -371,7 +371,7 @@ export class PdfGeneratorApi implements INodeType {
 						displayName: 'Color',
 						name: 'color',
 						type: 'color',
-						default: '#000000',
+						default: '#FF0000',
 						description: 'Color of the text watermark',
 					},
 					{
@@ -1377,7 +1377,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['conversion'],
-						operation: ['htmlToPdf'],
+						conversionOperation: ['htmlToPdf'],
 					},
 				},
 				default: `<!DOCTYPE html>
@@ -1488,7 +1488,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['conversion'],
-						operation: ['urlToPdf'],
+						conversionOperation: ['urlToPdf'],
 					},
 				},
 				default: '',
@@ -1605,20 +1605,20 @@ export class PdfGeneratorApi implements INodeType {
 						displayName: 'Output Format',
 						name: 'output',
 						type: 'options',
-										options: [
-					{
-						name: 'Base64 (JSON)',
-						value: 'base64',
-						description: 'Returns JSON response with base64 string',
-					},
-					{
-						name: 'File (Binary)',
-						value: 'file',
-						description: 'Returns binary file data for download/attachment',
-					},
-				],
-				default: 'base64',
-				description: 'Choose output format: JSON with base64 string or binary file',
+						options: [
+							{
+								name: 'Base64 (JSON)',
+								value: 'base64',
+								description: 'Returns JSON response with base64 string',
+							},
+							{
+								name: 'File (Binary)',
+								value: 'file',
+								description: 'Returns binary file data for download/attachment',
+							},
+						],
+						default: 'base64',
+						description: 'Choose output format: JSON with base64 string or binary file',
 					},
 				],
 			},
@@ -2438,9 +2438,23 @@ export class PdfGeneratorApi implements INodeType {
 							body,
 							json: outputFormat !== 'file',
 							encoding: outputFormat === 'file' ? null : 'utf8',
+							resolveWithFullResponse: true, // Get headers for optimization stats
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						const fullResponse = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = fullResponse.body;
+
+						// Extract optimization statistics from headers
+						const headers = fullResponse.headers || {};
+						const originalSize = headers['x-original-size'] ? parseInt(headers['x-original-size'], 10) : null;
+						const optimizedSize = headers['x-optimized-size'] ? parseInt(headers['x-optimized-size'], 10) : null;
+
+						// Store stats for later use in response
+						(responseData as any).__optimizationStats = {
+							originalSize,
+							optimizedSize,
+							compressionRatio: originalSize && optimizedSize ? ((originalSize - optimizedSize) / originalSize * 100) : null
+						};
 					}
 
 					// Handle PDF Services response based on output format
@@ -2458,25 +2472,54 @@ export class PdfGeneratorApi implements INodeType {
 								'application/pdf'
 							);
 
+							// Prepare JSON response with optimization stats if available
+							const jsonResponse: any = {
+								success: true,
+								operation,
+								filename: fileName,
+								format: outputFormat,
+								fileSize: binaryBuffer.length,
+							};
+
+							// Add optimization statistics if this is an optimize operation
+							if (operation === 'optimize' && (responseData as any).__optimizationStats) {
+								const stats = (responseData as any).__optimizationStats;
+								jsonResponse.optimizationStats = {
+									originalSize: stats.originalSize,
+									optimizedSize: stats.optimizedSize,
+									savedBytes: stats.originalSize && stats.optimizedSize ? stats.originalSize - stats.optimizedSize : null,
+									compressionRatio: stats.compressionRatio ? `${stats.compressionRatio.toFixed(2)}%` : null
+								};
+							}
+
 							returnData.push({
-								json: {
-									success: true,
-									operation,
-									filename: fileName,
-									format: outputFormat,
-									fileSize: binaryBuffer.length,
-								},
+								json: jsonResponse,
 								binary: binaryData,
 							});
 						} else {
 							// base64 and url formats return JSON only
+							const jsonResponse: any = {
+								success: true,
+								operation,
+								format: outputFormat,
+								...responseData,
+							};
+
+							// Add optimization statistics if this is an optimize operation
+							if (operation === 'optimize' && (responseData as any).__optimizationStats) {
+								const stats = (responseData as any).__optimizationStats;
+								jsonResponse.optimizationStats = {
+									originalSize: stats.originalSize,
+									optimizedSize: stats.optimizedSize,
+									savedBytes: stats.originalSize && stats.optimizedSize ? stats.originalSize - stats.optimizedSize : null,
+									compressionRatio: stats.compressionRatio ? `${stats.compressionRatio.toFixed(2)}%` : null
+								};
+								// Remove internal stats object from response
+								delete jsonResponse.__optimizationStats;
+							}
+
 							returnData.push({
-								json: {
-									success: true,
-									operation,
-									format: outputFormat,
-									...responseData,
-								},
+								json: jsonResponse,
 							});
 						}
 						continue;
