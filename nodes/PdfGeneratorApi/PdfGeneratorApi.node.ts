@@ -379,8 +379,8 @@ export class PdfGeneratorApi implements INodeType {
 						name: 'size',
 						type: 'number',
 						typeOptions: {
-							minValue: 8,
-							maxValue: 200,
+							minValue: 7,
+							maxValue: 80,
 						},
 						default: 48,
 						description: 'Font size of the text watermark',
@@ -403,40 +403,40 @@ export class PdfGeneratorApi implements INodeType {
 						type: 'options',
 						options: [
 							{
-								name: 'Top Left',
-								value: 'top-left',
-							},
-							{
-								name: 'Top Center',
-								value: 'top-center',
-							},
-							{
-								name: 'Top Right',
-								value: 'top-right',
-							},
-							{
-								name: 'Center Left',
-								value: 'center-left',
-							},
-							{
-								name: 'Center',
-								value: 'center',
-							},
-							{
-								name: 'Center Right',
-								value: 'center-right',
+								name: 'Bottom Center',
+								value: 'bottom-center',
 							},
 							{
 								name: 'Bottom Left',
 								value: 'bottom-left',
 							},
 							{
-								name: 'Bottom Center',
-								value: 'bottom-center',
-							},
-							{
 								name: 'Bottom Right',
 								value: 'bottom-right',
+							},
+							{
+								name: 'Center',
+								value: 'center',
+							},
+							{
+								name: 'Center Left',
+								value: 'center-left',
+							},
+							{
+								name: 'Center Right',
+								value: 'center-right',
+							},
+							{
+								name: 'Top Center',
+								value: 'top-center',
+							},
+							{
+								name: 'Top Left',
+								value: 'top-left',
+							},
+							{
+								name: 'Top Right',
+								value: 'top-right',
 							},
 						],
 						default: 'center',
@@ -1883,7 +1883,15 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+						// For delete operations, API returns 204 No Content on success
+						// Set responseData to a success response to avoid the "operation not supported" error
+						responseData = {
+							success: true,
+							message: 'Document deleted successfully',
+							publicId: publicId,
+						};
 
 					} else if (operation === 'generate') {
 						// Generate PDF document
@@ -2243,7 +2251,14 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+						// For delete operations, API returns 204 No Content on success
+						responseData = {
+							success: true,
+							message: 'Template deleted successfully',
+							templateId: templateId,
+						};
 
 					} else if (operation === 'validate') {
 						// Validate template configuration
@@ -2587,7 +2602,14 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+						// For delete operations, API returns 204 No Content on success
+						responseData = {
+							success: true,
+							message: 'Workspace deleted successfully',
+							workspaceIdentifier: workspaceIdentifier,
+						};
 					}
 				}
 
