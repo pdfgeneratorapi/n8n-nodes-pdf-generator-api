@@ -1096,7 +1096,7 @@ export class PdfGeneratorApi implements INodeType {
 						operation: ['create', 'update'],
 					},
 				},
-				default: '{\n  "name": "My Template",\n  "tags": [],\n  "isDraft": true,\n  "layout": {\n    "format": "A4",\n    "width": 21,\n    "height": 29.7,\n    "unit": "cm",\n    "orientation": "portrait",\n    "rotation": 0,\n    "margins": {\n      "top": 0.5,\n      "right": 0.5,\n      "bottom": 0.5,\n      "left": 0.5\n    }\n  },\n  "pages": [],\n  "dataSettings": {},\n  "editor": {},\n  "fontSubsetting": false,\n  "barcodeAsImage": false\n}',
+				default: '{\n  "name": "My Template",\n  "tags": [],\n  "isDraft": true,\n  "layout": {\n    "format": "A4",\n    "unit": "cm",\n    "orientation": "portrait",\n    "rotation": 0,\n    "margins": {\n      "top": 0,\n      "left": 0,\n      "right": 0,\n      "bottom": 0\n    },\n    "emptyLabels": 0,\n    "width": 21,\n    "height": 29.7,\n    "repeatLayout": null\n  },\n  "pages": [\n    {\n      "width": 21,\n      "height": 29.7,\n      "conditionalFormats": [],\n      "backgroundImage": null,\n      "layout": [],\n      "components": [],\n      "margins": {\n        "right": 0,\n        "bottom": 0\n      },\n      "border": false\n    }\n  ],\n  "dataSettings": {\n    "sortBy": [],\n    "filterBy": [],\n    "transform": []\n  },\n  "editor": {\n    "heightMultiplier": 1\n  },\n  "fontSubsetting": false,\n  "barcodeAsImage": false\n}',
 				description: 'The complete template configuration JSON. For create operation, the name from this object will be used.',
 			},
 
@@ -1112,7 +1112,7 @@ export class PdfGeneratorApi implements INodeType {
 						operation: ['validate'],
 					},
 				},
-				default: '{\n  "name": "My Template",\n  "tags": [],\n  "isDraft": true,\n  "layout": {\n    "format": "A4",\n    "width": 21,\n    "height": 29.7,\n    "unit": "cm",\n    "orientation": "portrait",\n    "rotation": 0,\n    "margins": {\n      "top": 0.5,\n      "right": 0.5,\n      "bottom": 0.5,\n      "left": 0.5\n    }\n  },\n  "pages": [],\n  "dataSettings": {},\n  "editor": {},\n  "fontSubsetting": false,\n  "barcodeAsImage": false\n}',
+				default: '{\n  "name": "My Template",\n  "tags": [],\n  "isDraft": true,\n  "layout": {\n    "format": "A4",\n    "unit": "cm",\n    "orientation": "portrait",\n    "rotation": 0,\n    "margins": {\n      "top": 0,\n      "left": 0,\n      "right": 0,\n      "bottom": 0\n    },\n    "emptyLabels": 0,\n    "width": 21,\n    "height": 29.7,\n    "repeatLayout": null\n  },\n  "pages": [\n    {\n      "width": 21,\n      "height": 29.7,\n      "conditionalFormats": [],\n      "backgroundImage": null,\n      "layout": [],\n      "components": [],\n      "margins": {\n        "right": 0,\n        "bottom": 0\n      },\n      "border": false\n    }\n  ],\n  "dataSettings": {\n    "sortBy": [],\n    "filterBy": [],\n    "transform": []\n  },\n  "editor": {\n    "heightMultiplier": 1\n  },\n  "fontSubsetting": false,\n  "barcodeAsImage": false\n}',
 				description: 'Template configuration to validate',
 			},
 
