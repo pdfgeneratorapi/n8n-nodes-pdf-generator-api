@@ -105,6 +105,7 @@ export class PdfGeneratorApi implements ICredentialType {
 			'iss': credentials.jwtIss as string,
 			'sub': credentials.workspace as string,
 			'exp': currentTimestamp + 60, // expiry time is 60 seconds from time of creation
+			'partner_id': 'n8n-node',
 		};
 
 		// Base64url encoding function
