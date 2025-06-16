@@ -102,7 +102,14 @@ The node automatically handles JWT token generation using your API credentials. 
 4. Configure paper size and orientation
 5. Specify filename and output format
 
-### Form Fields Operations
+### PDF Processing
+- **Watermarking**: Add text or image watermarks with positioning options
+- **Encryption**: Protect PDFs with owner and user passwords
+- **Decryption**: Remove password protection from encrypted PDFs
+- **Optimization**: Reduce file size while maintaining quality
+- **Form Fields**: Extract form field metadata and fill PDF forms with data
+
+#### Form Fields Operations
 1. **Extract Form Fields**: Analyze PDF forms to discover available fields
 2. **Fill Form Fields**: Populate PDF forms with data
 
@@ -115,11 +122,6 @@ Example form data:
   "subscribe": true
 }
 ```
-
-### PDF Processing
-- **Watermarking**: Add text or image watermarks with positioning options
-- **Encryption**: Protect PDFs with owner and user passwords
-- **Optimization**: Reduce file size while maintaining quality
 
 ### Output Formats
 - **Base64**: Returns PDF as base64 encoded string in JSON

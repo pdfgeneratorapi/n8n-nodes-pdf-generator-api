@@ -61,7 +61,7 @@ export class PdfGeneratorApi implements INodeType {
 					{
 						name: 'PDF Service',
 						value: 'pdfServices',
-						description: 'Process existing PDFs: add watermarks, encrypt, decrypt, or optimize',
+						description: 'Process existing PDFs: add watermarks, encrypt, decrypt, optimize, and manage form fields',
 					},
 					{
 						name: 'Template',
