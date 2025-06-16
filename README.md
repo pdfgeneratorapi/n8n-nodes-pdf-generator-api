@@ -148,6 +148,10 @@ For workflows that should continue on errors, enable "Continue on Fail" in node 
 
 ## Version history
 
+### 0.2.1
+- 🐛 **Fixed**: Fixed npm publish script in package.json
+- 📝 **Updated**: Package metadata and repository information
+
 ### 0.2.0
 - ✨ **New**: Added PDF form fields operations
   - Extract Form Fields: Analyze and extract form field metadata
