@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pdf-generator-api",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "PDF Generator API Node for n8n",
   "keywords": [
     "n8n-community-node-package"
@@ -9,11 +9,11 @@
   "homepage": "https://pdfgeneratorapi.com/",
   "author": {
     "name": "Bruno Farias",
-    "email": "brunofarias@gmail.com"
+    "email": "bruno@actualreports.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bruno-farias/n8n-nodes-pdf-generator-api.git"
+    "url": "https://github.com/pdfgeneratorapi/n8n-nodes-pdf-generator-api.git"
   },
   "engines": {
     "node": ">=20.15"
