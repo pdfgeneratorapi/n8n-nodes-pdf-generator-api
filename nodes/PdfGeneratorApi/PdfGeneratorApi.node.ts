@@ -195,6 +195,18 @@ export class PdfGeneratorApi implements INodeType {
 						action: 'Encrypt PDF document with password',
 					},
 					{
+						name: 'Extract Form Fields',
+						value: 'extractFormFields',
+						description: 'Extract form fields and their metadata from a PDF document',
+						action: 'Extract form fields from PDF document',
+					},
+					{
+						name: 'Fill Form Fields',
+						value: 'fillFormFields',
+						description: 'Fill form fields in a PDF document with provided data',
+						action: 'Fill form fields in PDF document',
+					},
+					{
 						name: 'Optimize Document',
 						value: 'optimize',
 						description: 'Optimize PDF document size for better performance',
@@ -607,6 +619,23 @@ export class PdfGeneratorApi implements INodeType {
 				default: '',
 				description: 'Password to decrypt the PDF document',
 				placeholder: 'Enter decryption password',
+			},
+
+			// PDF Services: Form Fields Data
+			{
+				displayName: 'Form Fields Data',
+				name: 'formFieldsData',
+				type: 'json',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['pdfServices'],
+						pdfServicesOperation: ['fillFormFields'],
+					},
+				},
+				default: '{}',
+				description: 'JSON object containing the form field names as keys and their values as data to fill in the PDF form',
+				placeholder: '{"firstName": "John", "lastName": "Doe", "email": "john.doe@example.com"}',
 			},
 
 			// Document Public ID field for get and delete operations
@@ -2430,6 +2459,44 @@ export class PdfGeneratorApi implements INodeType {
 
 						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
 
+					} else if (operation === 'extractFormFields') {
+						// Extract form fields from PDF document
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/pdfservices/form/fields',
+							body,
+							json: true, // Always return JSON for form fields extraction
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'fillFormFields') {
+						// Fill form fields in PDF document
+						const formFieldsData = this.getNodeParameter('formFieldsData', i) as string;
+
+						// Parse the JSON data
+						let parsedData;
+						try {
+							parsedData = typeof formFieldsData === 'string' ? JSON.parse(formFieldsData) : formFieldsData;
+						} catch (error) {
+							throw new NodeOperationError(this.getNode(), 'Form Fields Data must be valid JSON');
+						}
+
+						// Add form data to the request body
+						body.data = parsedData;
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/pdfservices/form/fill',
+							body,
+							json: outputFormat !== 'file',
+							encoding: outputFormat === 'file' ? null : 'utf8',
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
 					} else if (operation === 'optimize') {
 						// Optimize PDF document
 						const options: IRequestOptions = {
@@ -2460,7 +2527,16 @@ export class PdfGeneratorApi implements INodeType {
 
 					// Handle PDF Services response based on output format
 					if (responseData) {
-						if (outputFormat === 'file') {
+						// Special handling for extractFormFields - always returns JSON
+						if (operation === 'extractFormFields') {
+							returnData.push({
+								json: {
+									success: true,
+									operation,
+									...responseData,
+								},
+							});
+						} else if (outputFormat === 'file') {
 							// For file output, API returns raw binary PDF data
 							const binaryData: any = {};
 							const fileName = `processed-document.pdf`;

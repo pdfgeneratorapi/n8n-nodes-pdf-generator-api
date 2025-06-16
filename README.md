@@ -1,48 +1,163 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
+# n8n-nodes-pdf-generator-api
 
-# n8n-nodes-starter
+This is an n8n community node. It lets you use PDF Generator API in your n8n workflows.
 
-This repo contains example nodes to help you get started building your own custom integrations for [n8n](https://n8n.io). It includes the node linter and other dependencies.
+PDF Generator API is a powerful service that allows you to generate PDFs from templates, convert HTML/URLs to PDF, and perform various PDF operations like watermarking, encryption, optimization, and form field manipulation.
 
-To make your custom node available to the community, you must create it as an npm package, and [submit it to the npm registry](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry).
+[n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-If you would like your node to be available on n8n cloud you can also [submit your node for verification](https://docs.n8n.io/integrations/creating-nodes/deploy/submit-community-nodes/).
+[Installation](#installation)  
+[Operations](#operations)  
+[Credentials](#credentials)  
+[Compatibility](#compatibility)  
+[Usage](#usage)  
+[Resources](#resources)  
+[Version history](#version-history)  
 
-## Prerequisites
+## Installation
 
-You need the following installed on your development machine:
+Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-* [git](https://git-scm.com/downloads)
-* Node.js and npm. Minimum version Node 20. You can find instructions on how to install both using nvm (Node Version Manager) for Linux, Mac, and WSL [here](https://github.com/nvm-sh/nvm). For Windows users, refer to Microsoft's guide to [Install NodeJS on Windows](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows).
-* Install n8n with:
-  ```
-  npm install n8n -g
-  ```
-* Recommended: follow n8n's guide to [set up your development environment](https://docs.n8n.io/integrations/creating-nodes/build/node-development-environment/).
+Use the package name: `n8n-nodes-pdf-generator-api`
 
-## Using this starter
+## Operations
 
-These are the basic steps for working with the starter. For detailed guidance on creating and publishing nodes, refer to the [documentation](https://docs.n8n.io/integrations/creating-nodes/).
+This node supports the following operations organized by resource:
 
-1. [Generate a new repository](https://github.com/n8n-io/n8n-nodes-starter/generate) from this template repository.
-2. Clone your new repo:
-   ```
-   git clone https://github.com/<your organization>/<your-repo-name>.git
-   ```
-3. Run `npm i` to install dependencies.
-4. Open the project in your editor.
-5. Browse the examples in `/nodes` and `/credentials`. Modify the examples, or replace them with your own nodes.
-6. Update the `package.json` to match your details.
-7. Run `npm run lint` to check for errors or `npm run lintfix` to automatically fix errors when possible.
-8. Test your node locally. Refer to [Run your node locally](https://docs.n8n.io/integrations/creating-nodes/test/run-node-locally/) for guidance.
-9. Replace this README with documentation for your node. Use the [README_TEMPLATE](README_TEMPLATE.md) to get started.
-10. Update the LICENSE file to use your details.
-11. [Publish](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry) your package to npm.
+### Document
+- **Generate** - Generate a PDF document from a template with data
+- **Generate (Async)** - Generate a PDF document asynchronously with callback
+- **Generate (Batch)** - Generate multiple PDF documents in batch
+- **Generate (Batch + Async)** - Generate multiple PDF documents in batch asynchronously
+- **List** - List generated documents stored in the API
+- **Get** - Retrieve a specific document by public ID
+- **Delete** - Delete a document from storage
 
-## More information
+### Template
+- **Create** - Create a new PDF template
+- **Update** - Update an existing template configuration
+- **Get** - Retrieve template configuration
+- **Delete** - Delete a template
+- **List** - List available templates
+- **Copy** - Create a copy of an existing template
+- **Get Data Fields** - Extract data fields used in a template
+- **Open Editor** - Get URL to open template editor
+- **Validate** - Validate template configuration
 
-Refer to our [documentation on creating nodes](https://docs.n8n.io/integrations/creating-nodes/) for detailed information on building your own nodes.
+### Conversion
+- **HTML to PDF** - Convert HTML content directly to PDF
+- **URL to PDF** - Convert a public URL to PDF
 
-## License
+### PDF Services
+- **Add Watermark** - Add text or image watermarks to PDF documents
+- **Encrypt Document** - Encrypt PDF documents with password protection
+- **Decrypt Document** - Decrypt encrypted PDF documents
+- **Optimize Document** - Optimize PDF file size for better performance
+- **Extract Form Fields** - Extract form fields and metadata from PDF documents
+- **Fill Form Fields** - Fill form fields in PDF documents with provided data
 
-[MIT](https://github.com/n8n-io/n8n-nodes-starter/blob/master/LICENSE.md)
+### Workspace
+- **Create** - Create a new workspace for organizing templates
+- **List** - List all workspaces in organization
+- **Get** - Get workspace information
+- **Delete** - Delete a workspace
+
+## Credentials
+
+To use this node, you need to authenticate with PDF Generator API:
+
+### Prerequisites
+1. Sign up for a [PDF Generator API account](https://pdfgeneratorapi.com/signup)
+2. Get your API Key and API Secret from Account Settings
+
+### Authentication Setup
+1. In n8n, create new credentials for "PDF Generator API"
+2. Enter your **API Key** and **API Secret**
+
+### JWT Authentication
+The node automatically handles JWT token generation using your API credentials. Tokens are generated server-side and include:
+- Issuer (iss): Your API Key
+- Subject (sub): Workspace identifier
+- Expiration (exp): Short-lived tokens for security
+
+## Compatibility
+
+- **Minimum n8n version**: 0.199.0
+- **Tested with**: n8n versions 0.199.0+
+- **Node API version**: 1
+
+## Usage
+
+### Basic Document Generation
+1. Select **Resource**: Document
+2. Select **Operation**: Generate
+3. Choose your template from the dropdown
+4. Provide JSON data to merge with the template
+5. Select output format (Base64, URL, or File)
+
+### HTML to PDF Conversion
+1. Select **Resource**: Conversion
+2. Select **Operation**: HTML to PDF
+3. Enter your HTML content
+4. Configure paper size and orientation
+5. Specify filename and output format
+
+### Form Fields Operations
+1. **Extract Form Fields**: Analyze PDF forms to discover available fields
+2. **Fill Form Fields**: Populate PDF forms with data
+
+Example form data:
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "subscribe": true
+}
+```
+
+### PDF Processing
+- **Watermarking**: Add text or image watermarks with positioning options
+- **Encryption**: Protect PDFs with owner and user passwords
+- **Optimization**: Reduce file size while maintaining quality
+
+### Output Formats
+- **Base64**: Returns PDF as base64 encoded string in JSON
+- **URL**: Returns download URL (files stored for 30 days)
+- **File**: Returns binary PDF data for direct download
+
+### Error Handling
+The node includes comprehensive error handling for:
+- Authentication failures
+- Invalid template configurations
+- Missing required parameters
+- API rate limiting
+- Network connectivity issues
+
+For workflows that should continue on errors, enable "Continue on Fail" in node settings.
+
+## Resources
+
+* [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
+* [PDF Generator API Documentation](https://docs.pdfgeneratorapi.com)
+* [PDF Generator API Support](https://support.pdfgeneratorapi.com)
+* [Template Editor Guide](https://support.pdfgeneratorapi.com/en/category/components-1ffseaj/)
+* [Expression Language Documentation](https://support.pdfgeneratorapi.com/en/category/expression-language-q203pa/)
+
+## Version history
+
+### 0.2.0
+- ✨ **New**: Added PDF form fields operations
+  - Extract Form Fields: Analyze and extract form field metadata
+  - Fill Form Fields: Populate PDF forms with data
+- 🐛 **Fixed**: Improved error handling for PDF services operations
+- 📝 **Docs**: Enhanced documentation and examples
+
+### 0.1.0
+- 🎉 **Initial Release**: Complete PDF Generator API integration
+  - Document generation from templates
+  - HTML/URL to PDF conversion
+  - PDF processing (watermark, encrypt, decrypt, optimize)
+  - Template and workspace management
+  - Support for all output formats (Base64, URL, File)
+  - Comprehensive error handling and validation 
