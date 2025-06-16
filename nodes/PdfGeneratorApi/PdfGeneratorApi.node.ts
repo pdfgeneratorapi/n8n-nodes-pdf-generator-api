@@ -20,12 +20,13 @@ export class PdfGeneratorApi implements INodeType {
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		description: 'Consume PDF Generator API',
+		description: 'Generate PDFs, manage templates, convert HTML/URLs to PDF, and perform PDF operations like watermarking, encryption, and optimization',
 		defaults: {
 			name: 'PDF Generator API',
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		usableAsTool: true,
 		credentials: [
 			{
 				name: 'pdfGeneratorApi',
@@ -50,25 +51,31 @@ export class PdfGeneratorApi implements INodeType {
 					{
 						name: 'Conversion',
 						value: 'conversion',
+						description: 'Convert HTML content or URLs directly to PDF without templates',
 					},
 					{
 						name: 'Document',
 						value: 'document',
+						description: 'Generate PDFs from templates with data, manage document storage',
 					},
 					{
 						name: 'PDF Service',
 						value: 'pdfServices',
+						description: 'Process existing PDFs: add watermarks, encrypt, decrypt, or optimize',
 					},
 					{
 						name: 'Template',
 						value: 'template',
+						description: 'Create, update, and manage PDF templates for document generation',
 					},
 					{
 						name: 'Workspace',
 						value: 'workspace',
+						description: 'Manage workspaces for organizing templates and users',
 					},
 				],
 				default: 'document',
+				description: 'Choose the type of PDF operation: generate documents from templates, convert HTML/URLs, process existing PDFs, or manage templates and workspaces',
 			},
 
 			// Conversion Operations
@@ -1086,7 +1093,7 @@ export class PdfGeneratorApi implements INodeType {
 
 			// Template configuration for create/update operations
 			{
-				displayName: 'Template Configuration',
+				displayName: 'Template Configuration JSON',
 				name: 'templateConfiguration',
 				type: 'json',
 				required: true,
@@ -1097,12 +1104,12 @@ export class PdfGeneratorApi implements INodeType {
 					},
 				},
 				default: '{\n  "name": "My Template",\n  "tags": [],\n  "isDraft": true,\n  "layout": {\n    "format": "A4",\n    "unit": "cm",\n    "orientation": "portrait",\n    "rotation": 0,\n    "margins": {\n      "top": 0,\n      "left": 0,\n      "right": 0,\n      "bottom": 0\n    },\n    "emptyLabels": 0,\n    "width": 21,\n    "height": 29.7,\n    "repeatLayout": null\n  },\n  "pages": [\n    {\n      "width": 21,\n      "height": 29.7,\n      "conditionalFormats": [],\n      "backgroundImage": null,\n      "layout": [],\n      "components": [],\n      "margins": {\n        "right": 0,\n        "bottom": 0\n      },\n      "border": false\n    }\n  ],\n  "dataSettings": {\n    "sortBy": [],\n    "filterBy": [],\n    "transform": []\n  },\n  "editor": {\n    "heightMultiplier": 1\n  },\n  "fontSubsetting": false,\n  "barcodeAsImage": false\n}',
-				description: 'The complete template configuration JSON. For create operation, the name from this object will be used.',
+				description: 'The complete template configuration JSON object - provide the template object directly, NOT wrapped in another object. Must include: name, layout, pages array, dataSettings, editor objects. Example: {"name": "My Template", "layout": {...}, "pages": [...], "dataSettings": {...}, "editor": {...}}',
 			},
 
 			// Template configuration for validate operation
 			{
-				displayName: 'Template Configuration',
+				displayName: 'Template Configuration JSON',
 				name: 'templateConfig',
 				type: 'json',
 				required: true,
@@ -1113,7 +1120,7 @@ export class PdfGeneratorApi implements INodeType {
 					},
 				},
 				default: '{\n  "name": "My Template",\n  "tags": [],\n  "isDraft": true,\n  "layout": {\n    "format": "A4",\n    "unit": "cm",\n    "orientation": "portrait",\n    "rotation": 0,\n    "margins": {\n      "top": 0,\n      "left": 0,\n      "right": 0,\n      "bottom": 0\n    },\n    "emptyLabels": 0,\n    "width": 21,\n    "height": 29.7,\n    "repeatLayout": null\n  },\n  "pages": [\n    {\n      "width": 21,\n      "height": 29.7,\n      "conditionalFormats": [],\n      "backgroundImage": null,\n      "layout": [],\n      "components": [],\n      "margins": {\n        "right": 0,\n        "bottom": 0\n      },\n      "border": false\n    }\n  ],\n  "dataSettings": {\n    "sortBy": [],\n    "filterBy": [],\n    "transform": []\n  },\n  "editor": {\n    "heightMultiplier": 1\n  },\n  "fontSubsetting": false,\n  "barcodeAsImage": false\n}',
-				description: 'Template configuration to validate',
+				description: 'Template configuration JSON to validate - provide the template object directly, NOT wrapped in another object. Must include: name, layout, pages array, dataSettings, editor objects. Example: {"name": "My Template", "layout": {...}, "pages": [...], "dataSettings": {...}, "editor": {...}}',
 			},
 
 			// Copy template name
@@ -2235,9 +2242,15 @@ export class PdfGeneratorApi implements INodeType {
 
 					} else if (operation === 'validate') {
 						// Validate template configuration
-						const templateConfig = this.getNodeParameter('templateConfig', i) as string;
+						const templateConfig = this.getNodeParameter('templateConfig', i);
 
-						const body = JSON.parse(templateConfig);
+						// Handle both string and object inputs
+						const body = typeof templateConfig === 'string' ? JSON.parse(templateConfig) : templateConfig;
+
+						// Validate that the body is an object and has required properties
+						if (!body || typeof body !== 'object') {
+							throw new NodeOperationError(this.getNode(), 'Template configuration must be a valid JSON object', { itemIndex: i });
+						}
 
 						const options: IRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
