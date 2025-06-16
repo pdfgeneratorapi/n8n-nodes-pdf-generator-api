@@ -1,6 +1,6 @@
 {
-  "name": "n8n-nodes-pdf-generator-api",
-  "version": "0.2.1",
+  "name": "@pdfgeneratorapi/n8n-nodes-pdf-generator-api",
+  "version": "0.2.2",
   "description": "PDF Generator API Node for n8n",
   "keywords": [
     "n8n-community-node-package"
@@ -33,13 +33,9 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
-      "dist/credentials/ExampleCredentialsApi.credentials.js",
-      "dist/credentials/HttpBinApi.credentials.js",
       "dist/credentials/PdfGeneratorApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/ExampleNode/ExampleNode.node.js",
-      "dist/nodes/HttpBin/HttpBin.node.js",
       "dist/nodes/PdfGeneratorApi/PdfGeneratorApi.node.js"
     ]
   },

@@ -148,6 +148,11 @@ For workflows that should continue on errors, enable "Continue on Fail" in node 
 
 ## Version history
 
+### 0.2.2
+- 🧹 **Cleanup**: Removed example nodes and credentials from package
+- 🔧 **Improved**: Build process now only includes production files
+- 📦 **Optimized**: Package structure for better n8n compatibility
+
 ### 0.2.1
 - 🐛 **Fixed**: Fixed npm publish script in package.json
 - 📝 **Updated**: Package metadata and repository information
