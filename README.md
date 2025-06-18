@@ -147,7 +147,7 @@ For workflows that should continue on errors, enable "Continue on Fail" in node 
 * [Expression Language Documentation](https://support.pdfgeneratorapi.com/en/category/expression-language-q203pa/)
 
 ## Version history
-### 0.2.3 & 0.2.3
+### 0.2.3 & 0.2.4
 - 🧹 **Cleanup**: Removed external dependencies
 
 ### 0.2.2
