@@ -18,7 +18,7 @@ PDF Generator API is a powerful service that allows you to generate PDFs from te
 
 Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-Use the package name: `n8n-nodes-pdf-generator-api`
+Use the package name: `@pdfgeneratorapi/n8n-nodes-pdf-generator-api`
 
 ## Operations
 
