@@ -1,6 +1,6 @@
 {
   "name": "@pdfgeneratorapi/n8n-nodes-pdf-generator-api",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "PDF Generator API Node for n8n",
   "keywords": [
     "n8n-community-node-package"
@@ -40,6 +40,7 @@
     ]
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.15.30",
     "@typescript-eslint/parser": "~8.32.0",
     "eslint": "^8.57.0",
@@ -54,5 +55,8 @@
   },
   "bugs": {
     "url": "https://github.com/pdfgeneratorapi/n8n-nodes-pdf-generator-api/issues"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
   }
 }
