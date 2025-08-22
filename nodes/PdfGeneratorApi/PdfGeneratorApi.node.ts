@@ -1678,7 +1678,7 @@ export class PdfGeneratorApi implements INodeType {
 					}
 				} catch (error) {
 					// If API call fails, return empty array
-					console.error('Failed to load templates:', error);
+
 				}
 
 				const sortedResults = returnData.sort((a, b) => a.name.localeCompare(b.name));
@@ -1822,8 +1822,6 @@ export class PdfGeneratorApi implements INodeType {
 
 							// When json=false and encoding=null, responseData is the raw binary buffer
 							const binaryBuffer = Buffer.isBuffer(responseData) ? responseData : Buffer.from(responseData);
-
-							console.log(`Raw PDF buffer size: ${binaryBuffer.length} bytes`);
 
 							binaryData[fileName] = await this.helpers.prepareBinaryData(
 								binaryBuffer,

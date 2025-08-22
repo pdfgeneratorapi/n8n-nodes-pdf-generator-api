@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import {
 	ICredentialDataDecryptedObject,
 	ICredentialTestRequest,
@@ -88,58 +89,20 @@ export class PdfGeneratorApi implements ICredentialType {
 		return requestOptions;
 	}
 
-	// JWT generation method adapted from the provided JavaScript code
+	// JWT generation method using jsonwebtoken library
 	private generateJWT(credentials: ICredentialDataDecryptedObject): string {
-		const crypto = require('crypto');
-
-		// Set headers for JWT
-		const header = {
-			'typ': 'JWT',
-			'alg': 'HS256'
-		};
-
-		// Prepare timestamp in seconds
 		const currentTimestamp = Math.floor(Date.now() / 1000);
 
-		const data = {
-			'iss': credentials.jwtIss as string,
-			'sub': credentials.workspace as string,
-			'exp': currentTimestamp + 60, // expiry time is 60 seconds from time of creation
-			'partner_id': 'n8n-node',
+		const payload = {
+			iss: credentials.jwtIss as string,
+			sub: credentials.workspace as string,
+			exp: currentTimestamp + 60, // expiry time is 60 seconds from time of creation
+			partner_id: 'n8n-node',
 		};
 
-		// Base64url encoding function
-		function base64url(source: Buffer): string {
-			// Encode in classical base64
-			let encodedSource = source.toString('base64');
-
-			// Remove padding equal characters
-			encodedSource = encodedSource.replace(/=+$/, '');
-
-			// Replace characters according to base64url specifications
-			encodedSource = encodedSource.replace(/\+/g, '-');
-			encodedSource = encodedSource.replace(/\//g, '_');
-
-			return encodedSource;
-		}
-
-		// Encode header
-		const stringifiedHeader = Buffer.from(JSON.stringify(header));
-		const encodedHeader = base64url(stringifiedHeader);
-
-		// Encode data
-		const stringifiedData = Buffer.from(JSON.stringify(data));
-		const encodedData = base64url(stringifiedData);
-
-		// Build token
-		const token = `${encodedHeader}.${encodedData}`;
-
-		// Sign token
-		const signature = crypto.createHmac('sha256', credentials.jwtSecret as string).update(token).digest();
-		const encodedSignature = base64url(signature);
-		const signedToken = `${token}.${encodedSignature}`;
-
-		return signedToken;
+		return jwt.sign(payload, credentials.jwtSecret as string, {
+			algorithm: 'HS256',
+		});
 	}
 
 	// The block below tells how this credential can be tested
