@@ -1678,7 +1678,9 @@ export class PdfGeneratorApi implements INodeType {
 					}
 				} catch (error) {
 					// If API call fails, return empty array
-
+					return {
+						results: [],
+					};
 				}
 
 				const sortedResults = returnData.sort((a, b) => a.name.localeCompare(b.name));
