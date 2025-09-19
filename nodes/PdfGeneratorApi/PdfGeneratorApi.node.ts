@@ -80,8 +80,8 @@ export class PdfGeneratorApi implements INodeType {
 
 			// Conversion Operations
 			{
-				displayName: 'Operation',
-				name: 'conversionOperation',
+				displayName: 'Conversion Operations',
+				name: 'operation',
 				type: 'options',
 				noDataExpression: true,
 				displayOptions: {
@@ -108,8 +108,8 @@ export class PdfGeneratorApi implements INodeType {
 
 			// Document Operations
 			{
-				displayName: 'Operation',
-				name: 'documentOperation',
+				displayName: 'Document Operations',
+				name: 'operation',
 				type: 'options',
 				noDataExpression: true,
 				displayOptions: {
@@ -166,8 +166,8 @@ export class PdfGeneratorApi implements INodeType {
 
 			// PDF Services Operations
 			{
-				displayName: 'Operation',
-				name: 'pdfServicesOperation',
+				displayName: 'Services Operations',
+				name: 'operation',
 				type: 'options',
 				noDataExpression: true,
 				displayOptions: {
@@ -331,7 +331,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['addWatermark'],
+						operation: ['addWatermark'],
 					},
 				},
 				description: 'Type of watermark to add (can select both text and image)',
@@ -345,7 +345,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['addWatermark'],
+						operation: ['addWatermark'],
 						watermarkType: ['text'],
 					},
 				},
@@ -362,7 +362,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['addWatermark'],
+						operation: ['addWatermark'],
 						watermarkType: ['image'],
 					},
 				},
@@ -381,7 +381,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['addWatermark'],
+						operation: ['addWatermark'],
 						watermarkType: ['text'],
 					},
 				},
@@ -486,7 +486,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['addWatermark'],
+						operation: ['addWatermark'],
 						watermarkType: ['image'],
 					},
 				},
@@ -574,7 +574,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['encrypt'],
+						operation: ['encrypt'],
 					},
 				},
 				default: '',
@@ -593,7 +593,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['encrypt'],
+						operation: ['encrypt'],
 					},
 				},
 				default: '',
@@ -613,7 +613,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['decrypt'],
+						operation: ['decrypt'],
 					},
 				},
 				default: '',
@@ -630,7 +630,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['pdfServices'],
-						pdfServicesOperation: ['fillFormFields'],
+						operation: ['fillFormFields'],
 					},
 				},
 				default: '{}',
@@ -647,7 +647,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['get', 'delete'],
+						operation: ['get', 'delete'],
 					},
 				},
 				default: '',
@@ -657,14 +657,14 @@ export class PdfGeneratorApi implements INodeType {
 			// List options for document list operation
 			{
 				displayName: 'List Options',
-				name: 'listOptions',
+				name: 'documentListOptions',
 				type: 'collection',
 				placeholder: 'Add Option',
 				default: {},
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['list'],
+						operation: ['list'],
 					},
 				},
 				options: [
@@ -722,7 +722,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['generateBatch', 'generateBatchAsync'],
+						operation: ['generateBatch', 'generateBatchAsync'],
 					},
 				},
 				default: { templateList: [{}] },
@@ -791,7 +791,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['generateAsync', 'generateBatchAsync'],
+						operation: ['generateAsync', 'generateBatchAsync'],
 					},
 				},
 				options: [
@@ -892,7 +892,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['generate', 'generateAsync'],
+						operation: ['generate', 'generateAsync'],
 					},
 				},
 				modes: [
@@ -979,7 +979,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['getOutput'],
+						operation: ['getOutput'],
 					},
 				},
 				default: '',
@@ -995,7 +995,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['generate', 'generateAsync'],
+						operation: ['generate', 'generateAsync'],
 					},
 				},
 				default: '{}',
@@ -1010,7 +1010,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
+						operation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
 					},
 				},
 				options: [
@@ -1022,28 +1022,20 @@ export class PdfGeneratorApi implements INodeType {
 						name: 'HTML',
 						value: 'html',
 					},
-					{
-						name: 'ZIP',
-						value: 'zip',
-					},
-					{
-						name: 'XLSX',
-						value: 'xlsx',
-					},
 				],
 				default: 'pdf',
-				description: 'Document format. ZIP option returns a ZIP file with PDF files.',
+				description: 'Document format',
 			},
 
 			// Output field for document generation
 			{
 				displayName: 'Output',
-				name: 'output',
+				name: 'documentOutput',
 				type: 'options',
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['generate', 'generateBatch'],
+						operation: ['generate', 'generateBatch'],
 					},
 				},
 				options: [
@@ -1067,12 +1059,12 @@ export class PdfGeneratorApi implements INodeType {
 			// Output field for async document generation
 			{
 				displayName: 'Output',
-				name: 'output',
+				name: 'documentOutputAsync',
 				type: 'options',
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['generateAsync', 'generateBatchAsync'],
+						operation: ['generateAsync', 'generateBatchAsync'],
 					},
 				},
 				options: [
@@ -1099,7 +1091,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['document'],
-						documentOperation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
+						operation: ['generate', 'generateAsync', 'generateBatch', 'generateBatchAsync'],
 					},
 				},
 				options: [
@@ -1209,7 +1201,7 @@ export class PdfGeneratorApi implements INodeType {
 			// Pagination and filtering options for template list
 			{
 				displayName: 'List Options',
-				name: 'listOptions',
+				name: 'templateListOptions',
 				type: 'collection',
 				placeholder: 'Add Option',
 				default: {},
@@ -1265,7 +1257,7 @@ export class PdfGeneratorApi implements INodeType {
 
 			// Workspace Operations
 			{
-				displayName: 'Operation',
+				displayName: 'Workspace Operations',
 				name: 'operation',
 				type: 'options',
 				noDataExpression: true,
@@ -1306,7 +1298,7 @@ export class PdfGeneratorApi implements INodeType {
 			// Pagination options for workspace list
 			{
 				displayName: 'List Options',
-				name: 'listOptions',
+				name: 'workspaceListOptions',
 				type: 'collection',
 				placeholder: 'Add Option',
 				default: {},
@@ -1394,7 +1386,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['conversion'],
-						conversionOperation: ['htmlToPdf'],
+						operation: ['htmlToPdf'],
 					},
 				},
 				default: `<!DOCTYPE html>
@@ -1505,7 +1497,7 @@ export class PdfGeneratorApi implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['conversion'],
-						conversionOperation: ['urlToPdf'],
+						operation: ['urlToPdf'],
 					},
 				},
 				default: '',
@@ -1620,7 +1612,7 @@ export class PdfGeneratorApi implements INodeType {
 					},
 					{
 						displayName: 'Output Format',
-						name: 'output',
+						name: 'conversionOutput',
 						type: 'options',
 						options: [
 							{
@@ -1697,28 +1689,32 @@ export class PdfGeneratorApi implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 
 		const resource = this.getNodeParameter('resource', 0) as string;
-		let operation: string;
-
-		// Get the appropriate operation parameter based on the resource
-		switch (resource) {
-			case 'conversion':
-				operation = this.getNodeParameter('conversionOperation', 0) as string;
-				break;
-			case 'document':
-				operation = this.getNodeParameter('documentOperation', 0) as string;
-				break;
-			case 'pdfServices':
-				operation = this.getNodeParameter('pdfServicesOperation', 0) as string;
-				break;
-			case 'template':
-			case 'workspace':
-			default:
-				operation = this.getNodeParameter('operation', 0) as string;
-		}
+		const operation = this.getNodeParameter('operation', 0) as string;
 
 		// Get credentials to get the configurable baseURL
 		const credentials = await this.getCredentials('pdfGeneratorApi');
 		const baseURL = (credentials.baseUrl as string) || 'https://us1.pdfgeneratorapi.com/api/v4';
+
+		// Helper function for safe JSON parsing
+		const parseJSON = (value: unknown, field: string) => {
+			try {
+				return typeof value === 'string' ? JSON.parse(value) : value;
+			} catch (error) {
+				throw new NodeOperationError(this.getNode(), `${field} must be valid JSON`);
+			}
+		};
+
+		// Helper function to get correct MIME type for document formats
+		const getMimeType = (format: string) => {
+			switch (format) {
+				case 'pdf':
+					return 'application/pdf';
+				case 'html':
+					return 'text/html';
+				default:
+					return 'application/octet-stream';
+			}
+		};
 
 		for (let i = 0; i < items.length; i++) {
 			try {
@@ -1777,7 +1773,7 @@ export class PdfGeneratorApi implements INodeType {
 					const body: any = {
 						paper_size: conversionOptions.paper_size || 'a4',
 						orientation: conversionOptions.orientation || 'portrait',
-						output: conversionOptions.output || 'base64',
+						output: conversionOptions.conversionOutput || 'base64',
 						filename: filename || 'document',
 					};
 
@@ -1822,11 +1818,8 @@ export class PdfGeneratorApi implements INodeType {
 							const binaryData: any = {};
 							const fileName = `${filename}.pdf`;
 
-							// When json=false and encoding=null, responseData is the raw binary buffer
-							const binaryBuffer = Buffer.isBuffer(responseData) ? responseData : Buffer.from(responseData);
-
 							binaryData[fileName] = await this.helpers.prepareBinaryData(
-								binaryBuffer,
+								responseData,
 								fileName,
 								'application/pdf'
 							);
@@ -1836,7 +1829,7 @@ export class PdfGeneratorApi implements INodeType {
 									success: true,
 									filename: `${filename}.pdf`,
 									format: outputFormat,
-									fileSize: binaryBuffer.length,
+									fileSize: responseData.length,
 								},
 								binary: binaryData,
 							});
@@ -1856,15 +1849,15 @@ export class PdfGeneratorApi implements INodeType {
 				} else if (resource === 'document') {
 					if (operation === 'list') {
 						// List documents
-						const listOptions = this.getNodeParameter('listOptions', i, {}) as any;
+						const documentListOptions = this.getNodeParameter('documentListOptions', i, {}) as any;
 
 						// Build query parameters
 						const qs: any = {};
-						if (listOptions.template_id) qs.template_id = listOptions.template_id;
-						if (listOptions.start_date) qs.start_date = listOptions.start_date;
-						if (listOptions.end_date) qs.end_date = listOptions.end_date;
-						if (listOptions.page) qs.page = listOptions.page;
-						if (listOptions.per_page) qs.per_page = listOptions.per_page;
+						if (documentListOptions.template_id) qs.template_id = documentListOptions.template_id;
+						if (documentListOptions.start_date) qs.start_date = documentListOptions.start_date;
+						if (documentListOptions.end_date) qs.end_date = documentListOptions.end_date;
+						if (documentListOptions.page) qs.page = documentListOptions.page;
+						if (documentListOptions.per_page) qs.per_page = documentListOptions.per_page;
 
 						const options: IRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
@@ -1916,13 +1909,13 @@ export class PdfGeneratorApi implements INodeType {
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const data = this.getNodeParameter('data', i) as string;
 						const format = this.getNodeParameter('format', i, 'pdf') as string;
-						const output = this.getNodeParameter('output', i, 'base64') as string;
+						const output = this.getNodeParameter('documentOutput', i, 'base64') as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
 
 						const body: any = {
 							template: {
 								id: templateId,
-								data: JSON.parse(data),
+								data: parseJSON(data, 'data'),
 							},
 							format,
 							output,
@@ -1950,13 +1943,10 @@ export class PdfGeneratorApi implements INodeType {
 								const binaryData: any = {};
 								const fileName = `${additionalFields.outputName || 'document'}.${format}`;
 
-								// When json=false and encoding=null, responseData is the raw binary buffer
-								const binaryBuffer = Buffer.isBuffer(responseData) ? responseData : Buffer.from(responseData);
-
 								binaryData[fileName] = await this.helpers.prepareBinaryData(
-									binaryBuffer,
+									responseData,
 									fileName,
-									format === 'pdf' ? 'application/pdf' : `application/${format}`
+									getMimeType(format)
 								);
 
 								returnData.push({
@@ -1964,7 +1954,7 @@ export class PdfGeneratorApi implements INodeType {
 										success: true,
 										filename: fileName,
 										format: output,
-										fileSize: binaryBuffer.length,
+										fileSize: responseData.length,
 									},
 									binary: binaryData,
 								});
@@ -1989,14 +1979,14 @@ export class PdfGeneratorApi implements INodeType {
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const data = this.getNodeParameter('data', i) as string;
 						const format = this.getNodeParameter('format', i, 'pdf') as string;
-						const output = this.getNodeParameter('output', i, 'base64') as string;
+						const output = this.getNodeParameter('documentOutputAsync', i, 'base64') as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
 						const callbackOptions = this.getNodeParameter('callbackOptions', i, {}) as any;
 
 						const body: any = {
 							template: {
 								id: templateId,
-								data: JSON.parse(data),
+								data: parseJSON(data, 'data'),
 							},
 							format,
 							output,
@@ -2008,7 +1998,7 @@ export class PdfGeneratorApi implements INodeType {
 								url: callbackOptions.url,
 							};
 							if (callbackOptions.headers) {
-								body.callback.headers = JSON.parse(callbackOptions.headers);
+								body.callback.headers = parseJSON(callbackOptions.headers, 'callbackOptions.headers');
 							}
 						}
 
@@ -2030,7 +2020,7 @@ export class PdfGeneratorApi implements INodeType {
 						// Generate multiple PDF documents in batch
 						const templates = this.getNodeParameter('templates', i) as any;
 						const format = this.getNodeParameter('format', i, 'pdf') as string;
-						const output = this.getNodeParameter('output', i, 'base64') as string;
+						const output = this.getNodeParameter('documentOutput', i, 'base64') as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
 
 						// Build templates array
@@ -2038,7 +2028,7 @@ export class PdfGeneratorApi implements INodeType {
 							const templateId = typeof template.templateId === 'string' ? template.templateId : template.templateId.value;
 							return {
 								id: templateId,
-								data: JSON.parse(template.data),
+								data: parseJSON(template.data, 'template.data'),
 							};
 						});
 
@@ -2057,7 +2047,8 @@ export class PdfGeneratorApi implements INodeType {
 							baseURL,
 							url: '/documents/generate/batch',
 							body,
-							json: true,
+							json: output !== 'file', // Don't parse as JSON when expecting raw binary
+							encoding: output === 'file' ? null : 'utf8', // Handle binary data correctly
 						};
 
 						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
@@ -2065,44 +2056,14 @@ export class PdfGeneratorApi implements INodeType {
 						// Handle output based on format for batch generation
 						if (responseData && output !== 'url') {
 							if (output === 'file') {
-								// Only file format returns binary data
-								// Check if response data exists and handle different response structures
-								let fileData = responseData.response || responseData.data || responseData;
-
-								if (!fileData) {
-									throw new NodeOperationError(
-										this.getNode(),
-										`No file data received from API. Response structure: ${JSON.stringify(Object.keys(responseData))}`,
-										{ itemIndex: i },
-									);
-								}
-
+								// For file output, responseData is always a Buffer when json=false and encoding=null
 								const binaryData: any = {};
 								const fileName = `${additionalFields.outputName || 'batch-documents'}.${format}`;
 
-								// Handle different data formats
-								let binaryBuffer: Buffer;
-								if (typeof fileData === 'string') {
-									// If it's a base64 string, decode it
-									if (fileData.startsWith('data:')) {
-										// Handle data URI format
-										const base64Data = fileData.split(',')[1];
-										binaryBuffer = Buffer.from(base64Data, 'base64');
-									} else {
-										// Assume it's base64
-										binaryBuffer = Buffer.from(fileData, 'base64');
-									}
-								} else if (Buffer.isBuffer(fileData)) {
-									binaryBuffer = fileData;
-								} else {
-									// Try to convert to buffer assuming it's binary
-									binaryBuffer = Buffer.from(fileData);
-								}
-
 								binaryData[fileName] = await this.helpers.prepareBinaryData(
-									binaryBuffer,
+									responseData,
 									fileName,
-									format === 'pdf' ? 'application/pdf' : `application/${format}`
+									getMimeType(format)
 								);
 
 								returnData.push({
@@ -2110,7 +2071,7 @@ export class PdfGeneratorApi implements INodeType {
 										success: true,
 										filename: fileName,
 										format: output,
-										...responseData.meta,
+										fileSize: responseData.length,
 									},
 									binary: binaryData,
 								});
@@ -2133,7 +2094,7 @@ export class PdfGeneratorApi implements INodeType {
 						// Generate multiple PDF documents in batch asynchronously
 						const templates = this.getNodeParameter('templates', i) as any;
 						const format = this.getNodeParameter('format', i, 'pdf') as string;
-						const output = this.getNodeParameter('output', i, 'base64') as string;
+						const output = this.getNodeParameter('documentOutputAsync', i, 'base64') as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as any;
 						const callbackOptions = this.getNodeParameter('callbackOptions', i, {}) as any;
 
@@ -2142,7 +2103,7 @@ export class PdfGeneratorApi implements INodeType {
 							const templateId = typeof template.templateId === 'string' ? template.templateId : template.templateId.value;
 							return {
 								id: templateId,
-								data: JSON.parse(template.data),
+								data: parseJSON(template.data, 'template.data'),
 							};
 						});
 
@@ -2158,7 +2119,7 @@ export class PdfGeneratorApi implements INodeType {
 								url: callbackOptions.url,
 							};
 							if (callbackOptions.headers) {
-								body.callback.headers = JSON.parse(callbackOptions.headers);
+								body.callback.headers = parseJSON(callbackOptions.headers, 'callbackOptions.headers');
 							}
 						}
 
@@ -2180,15 +2141,15 @@ export class PdfGeneratorApi implements INodeType {
 				} else if (resource === 'template') {
 					if (operation === 'list') {
 						// List all templates
-						const listOptions = this.getNodeParameter('listOptions', i, {}) as any;
+						const templateListOptions = this.getNodeParameter('templateListOptions', i, {}) as any;
 
 						// Build query parameters
 						const qs: any = {};
-						if (listOptions.name) qs.name = listOptions.name;
-						if (listOptions.tags) qs.tags = listOptions.tags;
-						if (listOptions.access) qs.access = listOptions.access;
-						if (listOptions.page) qs.page = listOptions.page;
-						if (listOptions.per_page) qs.per_page = listOptions.per_page;
+						if (templateListOptions.name) qs.name = templateListOptions.name;
+						if (templateListOptions.tags) qs.tags = templateListOptions.tags;
+						if (templateListOptions.access) qs.access = templateListOptions.access;
+						if (templateListOptions.page) qs.page = templateListOptions.page;
+						if (templateListOptions.per_page) qs.per_page = templateListOptions.per_page;
 
 						const options: IRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
@@ -2218,7 +2179,7 @@ export class PdfGeneratorApi implements INodeType {
 						// Create new template
 						const templateConfiguration = this.getNodeParameter('templateConfiguration', i) as string;
 
-						const body = JSON.parse(templateConfiguration);
+						const body = parseJSON(templateConfiguration, 'templateConfiguration');
 
 						const options: IRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
@@ -2236,7 +2197,7 @@ export class PdfGeneratorApi implements INodeType {
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 						const templateConfiguration = this.getNodeParameter('templateConfiguration', i) as string;
 
-						const body = JSON.parse(templateConfiguration);
+						const body = parseJSON(templateConfiguration, 'templateConfiguration');
 
 						const options: IRequestOptions = {
 							method: 'PUT' as IHttpRequestMethods,
@@ -2274,7 +2235,7 @@ export class PdfGeneratorApi implements INodeType {
 						const templateConfig = this.getNodeParameter('templateConfig', i);
 
 						// Handle both string and object inputs
-						const body = typeof templateConfig === 'string' ? JSON.parse(templateConfig) : templateConfig;
+						const body = parseJSON(templateConfig, 'templateConfig');
 
 						// Validate that the body is an object and has required properties
 						if (!body || typeof body !== 'object') {
@@ -2331,7 +2292,7 @@ export class PdfGeneratorApi implements INodeType {
 						const editorOptions = this.getNodeParameter('editorOptions', i, {}) as any;
 
 						const body: any = {};
-						if (editorOptions.data) body.data = JSON.parse(editorOptions.data);
+						if (editorOptions.data) body.data = parseJSON(editorOptions.data, 'editorOptions.data');
 						if (editorOptions.language) body.language = editorOptions.language;
 
 						const options: IRequestOptions = {
@@ -2349,6 +2310,9 @@ export class PdfGeneratorApi implements INodeType {
 					// PDF Services operations
 					const pdfSource = this.getNodeParameter('pdfSource', i) as string;
 					const outputFormat = this.getNodeParameter('outputFormat', i, 'base64') as string;
+
+					// Declare optimization stats variable for optimize operation
+					let optimizationStats: any = null;
 
 					// Build request body with PDF source
 					const body: any = {};
@@ -2476,12 +2440,7 @@ export class PdfGeneratorApi implements INodeType {
 						const formFieldsData = this.getNodeParameter('formFieldsData', i) as string;
 
 						// Parse the JSON data
-						let parsedData;
-						try {
-							parsedData = typeof formFieldsData === 'string' ? JSON.parse(formFieldsData) : formFieldsData;
-						} catch (error) {
-							throw new NodeOperationError(this.getNode(), 'Form Fields Data must be valid JSON');
-						}
+						const parsedData = parseJSON(formFieldsData, 'Form Fields Data');
 
 						// Add form data to the request body
 						body.data = parsedData;
@@ -2517,8 +2476,8 @@ export class PdfGeneratorApi implements INodeType {
 						const originalSize = headers['x-original-size'] ? parseInt(headers['x-original-size'], 10) : null;
 						const optimizedSize = headers['x-optimized-size'] ? parseInt(headers['x-optimized-size'], 10) : null;
 
-						// Store stats for later use in response
-						(responseData as any).__optimizationStats = {
+						// Store stats in a separate variable to avoid mutating Buffer
+						optimizationStats = {
 							originalSize,
 							optimizedSize,
 							compressionRatio: originalSize && optimizedSize ? ((originalSize - optimizedSize) / originalSize * 100) : null
@@ -2541,10 +2500,8 @@ export class PdfGeneratorApi implements INodeType {
 							const binaryData: any = {};
 							const fileName = `processed-document.pdf`;
 
-							const binaryBuffer = Buffer.isBuffer(responseData) ? responseData : Buffer.from(responseData);
-
 							binaryData[fileName] = await this.helpers.prepareBinaryData(
-								binaryBuffer,
+								responseData,
 								fileName,
 								'application/pdf'
 							);
@@ -2555,17 +2512,16 @@ export class PdfGeneratorApi implements INodeType {
 								operation,
 								filename: fileName,
 								format: outputFormat,
-								fileSize: binaryBuffer.length,
+								fileSize: responseData.length,
 							};
 
 							// Add optimization statistics if this is an optimize operation
-							if (operation === 'optimize' && (responseData as any).__optimizationStats) {
-								const stats = (responseData as any).__optimizationStats;
+							if (operation === 'optimize' && optimizationStats) {
 								jsonResponse.optimizationStats = {
-									originalSize: stats.originalSize,
-									optimizedSize: stats.optimizedSize,
-									savedBytes: stats.originalSize && stats.optimizedSize ? stats.originalSize - stats.optimizedSize : null,
-									compressionRatio: stats.compressionRatio ? `${stats.compressionRatio.toFixed(2)}%` : null
+									originalSize: optimizationStats.originalSize,
+									optimizedSize: optimizationStats.optimizedSize,
+									savedBytes: optimizationStats.originalSize && optimizationStats.optimizedSize ? optimizationStats.originalSize - optimizationStats.optimizedSize : null,
+									compressionRatio: optimizationStats.compressionRatio ? `${optimizationStats.compressionRatio.toFixed(2)}%` : null
 								};
 							}
 
@@ -2583,16 +2539,13 @@ export class PdfGeneratorApi implements INodeType {
 							};
 
 							// Add optimization statistics if this is an optimize operation
-							if (operation === 'optimize' && (responseData as any).__optimizationStats) {
-								const stats = (responseData as any).__optimizationStats;
+							if (operation === 'optimize' && optimizationStats) {
 								jsonResponse.optimizationStats = {
-									originalSize: stats.originalSize,
-									optimizedSize: stats.optimizedSize,
-									savedBytes: stats.originalSize && stats.optimizedSize ? stats.originalSize - stats.optimizedSize : null,
-									compressionRatio: stats.compressionRatio ? `${stats.compressionRatio.toFixed(2)}%` : null
+									originalSize: optimizationStats.originalSize,
+									optimizedSize: optimizationStats.optimizedSize,
+									savedBytes: optimizationStats.originalSize && optimizationStats.optimizedSize ? optimizationStats.originalSize - optimizationStats.optimizedSize : null,
+									compressionRatio: optimizationStats.compressionRatio ? `${optimizationStats.compressionRatio.toFixed(2)}%` : null
 								};
-								// Remove internal stats object from response
-								delete jsonResponse.__optimizationStats;
 							}
 
 							returnData.push({
@@ -2605,12 +2558,12 @@ export class PdfGeneratorApi implements INodeType {
 				} else if (resource === 'workspace') {
 					if (operation === 'list') {
 						// List all workspaces
-						const listOptions = this.getNodeParameter('listOptions', i, {}) as any;
+						const workspaceListOptions = this.getNodeParameter('workspaceListOptions', i, {}) as any;
 
 						// Build query parameters
 						const qs: any = {};
-						if (listOptions.page) qs.page = listOptions.page;
-						if (listOptions.per_page) qs.per_page = listOptions.per_page;
+						if (workspaceListOptions.page) qs.page = workspaceListOptions.page;
+						if (workspaceListOptions.per_page) qs.per_page = workspaceListOptions.per_page;
 
 						const options: IRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
@@ -2695,6 +2648,3 @@ export class PdfGeneratorApi implements INodeType {
 		return [returnData];
 	}
 }
-
-
-
