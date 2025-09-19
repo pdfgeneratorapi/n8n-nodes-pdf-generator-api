@@ -128,6 +128,10 @@ Example form data:
 - **URL**: Returns download URL (files stored for 30 days)
 - **File**: Returns binary PDF data for direct download
 
+### Supported Document Formats
+- **PDF**: Full-featured PDF documents
+- **HTML**: HTML documents for web display
+
 ### Error Handling
 The node includes comprehensive error handling for:
 - Authentication failures
@@ -147,6 +151,16 @@ For workflows that should continue on errors, enable "Continue on Fail" in node 
 * [Expression Language Documentation](https://support.pdfgeneratorapi.com/en/category/expression-language-q203pa/)
 
 ## Version history
+
+### 0.3.0
+- 🔧 **Breaking**: Removed ZIP and XLSX format support
+- 🐛 **Fixed**: Parameter name collisions that caused UI issues with action generation
+- 🔧 **Improved**: File response handling
+- ✨ **New**: JSON parsing helper with consistent error handling across all user inputs
+- 🐛 **Fixed**: MIME type mappings for proper file downloads (PDF, HTML)
+- 🐛 **Fixed**: Resource/operation parameter extraction for proper n8n batch processing
+- 🔧 **Improved**: PDF optimization stats
+- 🛡️ **Security**: Enhanced input validation and error messaging
 
 ### 0.2.5 & 0.2.6
 - 🧹 **Improved**: Removed debug code
