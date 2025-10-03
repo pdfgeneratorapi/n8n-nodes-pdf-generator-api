@@ -24,6 +24,12 @@ Use the package name: `@pdfgeneratorapi/n8n-nodes-pdf-generator-api`
 
 This node supports the following operations organized by resource:
 
+### Asset
+- **Generate QR Code** - Generate QR codes with customizable colors and logos
+  - Support for base64 and file output formats
+  - Optional logo overlay (from URL or base64)
+  - Customizable QR code color
+
 ### Document
 - **Generate** - Generate a PDF document from a template with data
 - **Generate (Async)** - Generate a PDF document asynchronously with callback
@@ -41,6 +47,7 @@ This node supports the following operations organized by resource:
 - **List** - List available templates
 - **Copy** - Create a copy of an existing template
 - **Get Data Fields** - Extract data fields used in a template
+- **Get Template Schema** - Get Template JSON Schema for validation
 - **Open Editor** - Get URL to open template editor
 - **Validate** - Validate template configuration
 
@@ -88,12 +95,20 @@ The node automatically handles JWT token generation using your API credentials. 
 
 ## Usage
 
+### QR Code Generation
+1. Select **Resource**: Asset
+2. Select **Operation**: Generate QR Code
+3. Enter the content to encode (URL, text, etc.)
+4. Choose output format (Base64 or File)
+5. Optionally add a logo from URL or base64
+6. Customize QR code color
+
 ### Basic Document Generation
 1. Select **Resource**: Document
 2. Select **Operation**: Generate
 3. Choose your template from the dropdown
 4. Provide JSON data to merge with the template
-5. Select output format (Base64, URL, or File)
+5. Select output format (Base64, URL, Viewer, or File)
 
 ### HTML to PDF Conversion
 1. Select **Resource**: Conversion
@@ -126,6 +141,7 @@ Example form data:
 ### Output Formats
 - **Base64**: Returns PDF as base64 encoded string in JSON
 - **URL**: Returns download URL (files stored for 30 days)
+- **Viewer**: Returns viewer URL for viewing/downloading (files stored for 30 days)
 - **File**: Returns binary PDF data for direct download
 
 ### Supported Document Formats
@@ -151,6 +167,19 @@ For workflows that should continue on errors, enable "Continue on Fail" in node 
 * [Expression Language Documentation](https://support.pdfgeneratorapi.com/en/category/expression-language-q203pa/)
 
 ## Version history
+
+### 0.4.0
+- **New**: Added Asset resource with QR code generation
+  - Generate QR codes with customizable colors
+  - Optional logo overlay support (URL or base64)
+  - Base64 and file output formats
+- **New**: Added "Get Template Schema" operation to Template resource
+  - Returns Template JSON Schema for validation
+- **New**: Added "Viewer" output format for document generation
+  - Available for all document generation operations (sync, async, batch)
+  - Returns viewer URL for viewing/downloading PDFs
+  - Files stored for 30 days like URL format
+- 🔧 **Improved**: Enhanced output format descriptions and help text
 
 ### 0.3.0
 - 🔧 **Breaking**: Removed ZIP and XLSX format support

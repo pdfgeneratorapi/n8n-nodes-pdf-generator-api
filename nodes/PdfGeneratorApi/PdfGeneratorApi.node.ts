@@ -49,6 +49,11 @@ export class PdfGeneratorApi implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
+						name: 'Asset',
+						value: 'asset',
+						description: 'Generate QR codes and other assets for use in documents',
+					},
+					{
 						name: 'Conversion',
 						value: 'conversion',
 						description: 'Convert HTML content or URLs directly to PDF without templates',
@@ -76,6 +81,28 @@ export class PdfGeneratorApi implements INodeType {
 				],
 				default: 'document',
 				description: 'Choose the type of PDF operation: generate documents from templates, convert HTML/URLs, process existing PDFs, or manage templates and workspaces',
+			},
+
+			// Asset Operations
+			{
+				displayName: 'Asset Operations',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['asset'],
+					},
+				},
+				options: [
+					{
+						name: 'Generate QR Code',
+						value: 'generateQRCode',
+						description: 'Generate a QR code image',
+						action: 'Generate a QR code image',
+					},
+				],
+				default: 'generateQRCode',
 			},
 
 			// Conversion Operations
@@ -855,6 +882,12 @@ export class PdfGeneratorApi implements INodeType {
 						action: 'Get template data fields',
 					},
 					{
+						name: 'Get Template Schema',
+						value: 'getTemplateSchema',
+						description: 'Get template JSON schema',
+						action: 'Get template JSON schema',
+					},
+					{
 						name: 'List',
 						value: 'list',
 						description: 'Get all templates',
@@ -1051,9 +1084,13 @@ export class PdfGeneratorApi implements INodeType {
 						name: 'URL',
 						value: 'url',
 					},
+					{
+						name: 'Viewer',
+						value: 'viewer',
+					},
 				],
 				default: 'base64',
-				description: 'Response format. File option returns the file inline. URL option stores document for 30 days.',
+				description: 'Response format. File returns inline. URL and Viewer store document for 30 days.',
 			},
 
 			// Output field for async document generation
@@ -1076,9 +1113,13 @@ export class PdfGeneratorApi implements INodeType {
 						name: 'URL',
 						value: 'url',
 					},
+					{
+						name: 'Viewer',
+						value: 'viewer',
+					},
 				],
 				default: 'base64',
-				description: 'Response format. URL option stores document for 30 days.',
+				description: 'Response format. File returns inline. URL and Viewer store document for 30 days.',
 			},
 
 			// Additional fields for document generation
@@ -1363,6 +1404,141 @@ export class PdfGeneratorApi implements INodeType {
 				},
 				default: '',
 				description: 'A unique identifier for the new workspace',
+			},
+
+			// QR Code Content
+			{
+				displayName: 'Content',
+				name: 'qrContent',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['asset'],
+						operation: ['generateQRCode'],
+					},
+				},
+				default: '',
+				description: 'The content to encode in the QR code (URL, text, etc.)',
+				placeholder: 'https://example.com',
+			},
+
+			// QR Code Output Format
+			{
+				displayName: 'Output Format',
+				name: 'qrOutputFormat',
+				type: 'options',
+				options: [
+					{
+						name: 'Base64 (JSON)',
+						value: 'base64',
+						description: 'Returns JSON response with base64 encoded PNG image',
+					},
+					{
+						name: 'File (Binary)',
+						value: 'file',
+						description: 'Returns binary PNG image file data',
+					},
+				],
+				default: 'base64',
+				displayOptions: {
+					show: {
+						resource: ['asset'],
+						operation: ['generateQRCode'],
+					},
+				},
+				description: 'Choose output format for the QR code',
+			},
+
+			// QR Code Logo Source
+			{
+				displayName: 'Logo Source',
+				name: 'logoSource',
+				type: 'options',
+				options: [
+					{
+						name: 'None',
+						value: 'none',
+					},
+					{
+						name: 'From URL',
+						value: 'url',
+					},
+					{
+						name: 'From Base64',
+						value: 'base64',
+					},
+				],
+				default: 'none',
+				displayOptions: {
+					show: {
+						resource: ['asset'],
+						operation: ['generateQRCode'],
+					},
+				},
+				description: 'Add a logo to the QR code',
+			},
+
+			// QR Code Logo URL
+			{
+				displayName: 'Logo URL',
+				name: 'logo_url',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['asset'],
+						operation: ['generateQRCode'],
+						logoSource: ['url'],
+					},
+				},
+				default: '',
+				description: 'Logo URL to an image to add on the QR code',
+				placeholder: 'https://example.com/logo.png',
+			},
+
+			// QR Code Logo Base64
+			{
+				displayName: 'Logo Base64',
+				name: 'logo_base64',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				displayOptions: {
+					show: {
+						resource: ['asset'],
+						operation: ['generateQRCode'],
+						logoSource: ['base64'],
+					},
+				},
+				default: '',
+				description: 'Logo as a base64 image string to add on the QR code',
+				placeholder: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB...',
+			},
+
+			// QR Code Additional Options
+			{
+				displayName: 'Additional Options',
+				name: 'qrCodeOptions',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['asset'],
+						operation: ['generateQRCode'],
+					},
+				},
+				description: 'Additional options for QR code generation',
+				options: [
+					{
+						displayName: 'Color',
+						name: 'color',
+						type: 'color',
+						default: '#000000',
+						description: 'QR code color in hexadecimal format',
+					},
+				],
 			},
 
 			// HTML content for HTML to PDF conversion
@@ -1720,7 +1896,88 @@ export class PdfGeneratorApi implements INodeType {
 			try {
 				let responseData;
 
-				if (resource === 'conversion') {
+				if (resource === 'asset') {
+					if (operation === 'generateQRCode') {
+						// Generate QR code
+						const qrContent = this.getNodeParameter('qrContent', i) as string;
+						const qrOutputFormat = this.getNodeParameter('qrOutputFormat', i, 'base64') as string;
+						const logoSource = this.getNodeParameter('logoSource', i, 'none') as string;
+						const qrCodeOptions = this.getNodeParameter('qrCodeOptions', i, {}) as any;
+
+						// Validate required fields
+						if (!qrContent || qrContent.trim() === '') {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Content is required for QR code generation',
+								{ itemIndex: i },
+							);
+						}
+
+						// Build request body
+						const body: any = {
+							content: qrContent,
+							output: qrOutputFormat,
+						};
+
+						// Add optional parameters
+						if (qrCodeOptions.color) body.color = qrCodeOptions.color;
+
+						// Handle logo based on source
+						if (logoSource === 'base64') {
+							const logoBase64 = this.getNodeParameter('logo_base64', i, '') as string;
+							if (logoBase64) body.logo_base64 = logoBase64;
+						} else if (logoSource === 'url') {
+							const logoUrl = this.getNodeParameter('logo_url', i, '') as string;
+							if (logoUrl) body.logo_url = logoUrl;
+						}
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/assets/qrcode',
+							body,
+							json: qrOutputFormat !== 'file',
+							encoding: qrOutputFormat === 'file' ? null : 'utf8',
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+						// Handle output based on format
+						if (responseData) {
+							if (qrOutputFormat === 'file') {
+								// For file output, API returns raw binary data
+								const binaryData: any = {};
+								const fileName = 'qrcode.png';
+
+								binaryData[fileName] = await this.helpers.prepareBinaryData(
+									responseData,
+									fileName,
+									'image/png'
+								);
+
+								returnData.push({
+									json: {
+										success: true,
+										filename: fileName,
+										format: qrOutputFormat,
+										fileSize: responseData.length,
+									},
+									binary: binaryData,
+								});
+							} else {
+								// base64 format returns JSON only
+								returnData.push({
+									json: {
+										success: true,
+										format: qrOutputFormat,
+										...responseData,
+									},
+								});
+							}
+							continue;
+						}
+					}
+				} else if (resource === 'conversion') {
 					const conversionOptions = this.getNodeParameter('conversionOptions', i, {}) as any;
 					const filename = this.getNodeParameter('filename', i) as string;
 
@@ -1937,7 +2194,7 @@ export class PdfGeneratorApi implements INodeType {
 						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
 
 						// Handle output based on format for document generation
-						if (responseData && output !== 'url') {
+						if (responseData && output !== 'url' && output !== 'viewer') {
 							if (output === 'file') {
 								// For file output, API returns raw binary data
 								const binaryData: any = {};
@@ -2054,7 +2311,7 @@ export class PdfGeneratorApi implements INodeType {
 						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
 
 						// Handle output based on format for batch generation
-						if (responseData && output !== 'url') {
+						if (responseData && output !== 'url' && output !== 'viewer') {
 							if (output === 'file') {
 								// For file output, responseData is always a Buffer when json=false and encoding=null
 								const binaryData: any = {};
@@ -2261,6 +2518,17 @@ export class PdfGeneratorApi implements INodeType {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: `/templates/${templateId}/data`,
+							json: true,
+						};
+
+						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+
+					} else if (operation === 'getTemplateSchema') {
+						// Get template schema
+						const options: IRequestOptions = {
+							method: 'GET' as IHttpRequestMethods,
+							baseURL,
+							url: '/templates/schema',
 							json: true,
 						};
 
