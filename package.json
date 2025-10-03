@@ -1,6 +1,6 @@
 {
   "name": "@pdfgeneratorapi/n8n-nodes-pdf-generator-api",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "PDF Generator API Node for n8n",
   "keywords": [
     "n8n-community-node-package"
