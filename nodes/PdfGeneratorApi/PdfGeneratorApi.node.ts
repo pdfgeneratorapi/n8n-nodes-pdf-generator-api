@@ -64,6 +64,11 @@ export class PdfGeneratorApi implements INodeType {
 						description: 'Generate PDFs from templates with data, manage document storage',
 					},
 					{
+						name: 'E-Invoice',
+						value: 'einvoice',
+						description: 'Create EN 16931 e-invoices as UBL or CII XML, XRechnung 3.0, or Factur-X PDF',
+					},
+					{
 						name: 'PDF Service',
 						value: 'pdfServices',
 						description: 'Process existing PDFs: add watermarks, encrypt, decrypt, optimize, and manage form fields',
@@ -189,6 +194,46 @@ export class PdfGeneratorApi implements INodeType {
 					},
 				],
 				default: 'generate',
+			},
+
+			// E-Invoice Operations
+			{
+				displayName: 'E-Invoice Operations',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+					},
+				},
+				options: [
+					{
+						name: 'Create E-Invoice',
+						value: 'createEInvoice',
+						description: 'Create an EN 16931 e-invoice as UBL or CII XML',
+						action: 'Create an EN 16931 e invoice',
+					},
+					{
+						name: 'Create Factur-X E-Invoice',
+						value: 'createFacturX',
+						description: 'Create a Factur-X PDF with the CII XML embedded',
+						action: 'Create a FACTUR-X e invoice',
+					},
+					{
+						name: 'Create XRechnung E-Invoice',
+						value: 'createXRechnung',
+						description: 'Create an XRechnung 3.0 e-invoice, validated against the German BR-DE rules',
+						action: 'Create an XRECHNUNG e invoice',
+					},
+					{
+						name: 'Get Schema',
+						value: 'getEInvoiceSchema',
+						description: 'Get the JSON schema of the accepted e-invoice payload',
+						action: 'Get the e invoice payload schema',
+					},
+				],
+				default: 'createEInvoice',
 			},
 
 			// PDF Services Operations
@@ -1807,6 +1852,259 @@ export class PdfGeneratorApi implements INodeType {
 					},
 				],
 			},
+			// ----------------------------------------
+			//               E-Invoice
+			// ----------------------------------------
+
+			// Invoice payload, shared by the two XML operations
+			{
+				displayName: 'Invoice Data',
+				name: 'einvoiceData',
+				type: 'json',
+				required: true,
+				default: '{}',
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+						operation: ['createEInvoice', 'createXRechnung'],
+					},
+				},
+				description: 'Peppol BIS Billing 3.0 UBL invoice payload. Run Get Schema for the full structure. Note that BT-11, BT-12, BT-19 and attachments are accepted but silently dropped, and an unpadded base64 attachment returns a 500',
+			},
+			{
+				displayName: 'Formatting Type',
+				name: 'einvoiceType',
+				type: 'options',
+				options: [
+					{
+						name: 'CII',
+						value: 'CII',
+						description: 'Cross Industry Invoice XML',
+					},
+					{
+						name: 'UBL',
+						value: 'UBL',
+						description: 'Universal Business Language XML',
+					},
+				],
+				default: 'UBL',
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+						operation: ['createEInvoice', 'createXRechnung'],
+					},
+				},
+				description: 'XML syntax of the generated e-invoice',
+			},
+			{
+				displayName: 'Output',
+				name: 'einvoiceOutput',
+				type: 'options',
+				options: [
+					{
+						name: 'Base64 (JSON)',
+						value: 'base64',
+						description: 'Returns JSON with a base64 string, and also attaches the decoded XML as binary',
+					},
+					{
+						name: 'File (Binary)',
+						value: 'file',
+						description: 'Returns the XML inline as binary data',
+					},
+				],
+				default: 'base64',
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+						operation: ['createEInvoice', 'createXRechnung'],
+					},
+				},
+				description: 'Response format. Either way the XML is attached as a binary item named "data".',
+			},
+
+			// Factur-X
+			{
+				displayName: 'Template',
+				name: 'templateId',
+				type: 'resourceLocator',
+				default: { mode: 'list', value: '' },
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+						operation: ['createFacturX'],
+					},
+				},
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						hint: 'Select a template from the list',
+						typeOptions: {
+							searchListMethod: 'searchTemplates',
+							searchable: true,
+							searchFilterRequired: false,
+						},
+					},
+					{
+						displayName: 'By ID',
+						name: 'id',
+						type: 'string',
+						hint: 'Enter the template ID directly',
+						validation: [
+							{
+								type: 'regex',
+								properties: {
+									regex: '^[0-9]+$',
+									errorMessage: 'Template ID must be a number',
+								},
+							},
+						],
+					},
+				],
+				description: 'Template used to render the PDF half of the Factur-X file. Required by the API, which returns an unhelpful 422 when it is missing. Use a template whose fields are mapped to UBL element names, because a friendly-name stock template renders blank here',
+			},
+			{
+				displayName: 'Invoice Data',
+				name: 'facturxData',
+				type: 'json',
+				required: true,
+				default: '{}',
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+						operation: ['createFacturX'],
+					},
+				},
+				description: 'Peppol BIS Billing 3.0 UBL invoice payload, used both to render the template and to build the embedded CII XML. Run Get Schema for the full structure.',
+			},
+			{
+				displayName: 'Profile',
+				name: 'facturxProfile',
+				type: 'options',
+				options: [
+					{
+						name: 'Basic',
+						value: 'basic',
+						description: 'Core invoice data. Drops item level attributes such as AdditionalItemProperty.',
+					},
+					{
+						name: 'Basic WL',
+						value: 'basicwl',
+						description: 'Basic without lines, for accounting entry only',
+					},
+					{
+						name: 'EN 16931',
+						value: 'en16931',
+						description: 'Full EN 16931 semantic model. Keeps item level attributes.',
+					},
+					{
+						name: 'Extended',
+						value: 'extended',
+						description: 'EN 16931 plus extensions. Keeps item level attributes.',
+					},
+					{
+						name: 'Minimum',
+						value: 'minimum',
+						description: 'Header data only, not a compliant invoice in most jurisdictions',
+					},
+					{
+						name: 'XRechnung',
+						value: 'xrechnung',
+						description: 'German XRechnung CIUS on top of EN 16931',
+					},
+				],
+				default: 'basic',
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+						operation: ['createFacturX'],
+					},
+				},
+				description: 'Factur-X conformance level. Defaults to Basic, which silently drops item level detail, so choose EN 16931 or Extended when the invoice carries per-line attributes.',
+			},
+			{
+				displayName: 'Output',
+				name: 'facturxOutput',
+				type: 'options',
+				options: [
+					{
+						name: 'Base64 (JSON)',
+						value: 'base64',
+						description: 'Returns JSON with a base64 string, and also attaches the decoded PDF as binary',
+					},
+					{
+						name: 'File (Binary)',
+						value: 'file',
+						description: 'Returns the PDF inline as binary data',
+					},
+					{
+						name: 'URL',
+						value: 'url',
+						description: 'Stores the document for 30 days and returns a link',
+					},
+					{
+						name: 'Viewer URL',
+						value: 'viewer',
+						description: 'Stores the document for 30 days and returns a viewer link',
+					},
+				],
+				default: 'base64',
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+						operation: ['createFacturX'],
+					},
+				},
+				description: 'Response format. Base64 and File both attach the PDF as a binary item named "data".',
+			},
+			{
+				displayName: 'Additional Fields',
+				name: 'facturxAdditionalFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['einvoice'],
+						operation: ['createFacturX'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Author',
+						name: 'author',
+						type: 'string',
+						default: '',
+						description: 'Document author written into the PDF metadata',
+					},
+					{
+						displayName: 'Document Name',
+						name: 'outputName',
+						type: 'string',
+						default: '',
+						placeholder: 'e.g. Invoice 123',
+						description: 'Name of the generated document. The API generates one when this is empty.',
+					},
+					{
+						displayName: 'Language',
+						name: 'language',
+						type: 'string',
+						default: '',
+						placeholder: 'e.g. en',
+						description: 'Document language written into the PDF metadata',
+					},
+					{
+						displayName: 'Template Version ID',
+						name: 'versionId',
+						type: 'number',
+						default: 0,
+						description: 'Pin generation to a specific template version instead of the current one',
+					},
+				],
+			},
+
 		],
 	};
 
@@ -1976,6 +2274,165 @@ export class PdfGeneratorApi implements INodeType {
 							}
 							continue;
 						}
+					}
+				} else if (resource === 'einvoice') {
+					// Surface the API's own error message. For /einvoice/xrechnung this is the
+					// only useful debugging signal, e.g. [BR-DE-5] Das Element "Seller contact
+					// point" (BT-41) muss uebermittelt werden.
+					const callEInvoice = async (requestOptions: IRequestOptions) => {
+						try {
+							return await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', requestOptions);
+						} catch (error) {
+							// requestWithAuthentication wraps 4xx/5xx in a NodeApiError whose message
+							// is n8n's generic status text; the API's own message moves to description
+							// and the raw body to context.data.
+							const body = error.response ? error.response.body : undefined;
+							const contextData = error.context ? error.context.data : undefined;
+							const apiMessage =
+								(body && (body.message || body.error)) ||
+								(contextData && contextData.message) ||
+								error.description ||
+								(error.error && error.error.message) ||
+								error.message;
+							throw new NodeOperationError(
+								this.getNode(),
+								`PDF Generator API e-invoice request failed: ${apiMessage}`,
+								{ itemIndex: i },
+							);
+						}
+					};
+
+					// Attach the document as binary under the standard "data" key, so the next
+					// node can upload or email it without a Code node in between.
+					const pushDocument = async (
+						payload: any,
+						output: string,
+						fallbackName: string,
+						fallbackMimeType: string,
+					) => {
+						if (output === 'file') {
+							const binary: any = {};
+							binary.data = await this.helpers.prepareBinaryData(payload, fallbackName, fallbackMimeType);
+							returnData.push({
+								json: {
+									success: true,
+									filename: fallbackName,
+									format: output,
+									fileSize: payload.length,
+								},
+								binary,
+							});
+							return;
+						}
+
+						const meta = payload.meta || {};
+						const fileName = meta.name || fallbackName;
+						const mimeType = meta['content-type'] || fallbackMimeType;
+						const binary: any = {};
+						binary.data = await this.helpers.prepareBinaryData(
+							Buffer.from(payload.response as string, 'base64'),
+							fileName,
+							mimeType,
+						);
+						returnData.push({
+							json: {
+								success: true,
+								filename: fileName,
+								format: output,
+								...payload,
+							},
+							binary,
+						});
+					};
+
+					if (operation === 'createEInvoice' || operation === 'createXRechnung') {
+						const data = this.getNodeParameter('einvoiceData', i) as string;
+						const type = this.getNodeParameter('einvoiceType', i, 'UBL') as string;
+						const output = this.getNodeParameter('einvoiceOutput', i, 'base64') as string;
+
+						const body: any = {
+							data: parseJSON(data, 'Invoice Data'),
+							type,
+							output,
+						};
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: operation === 'createXRechnung' ? '/einvoice/xrechnung' : '/einvoice',
+							body,
+							json: output !== 'file',
+							encoding: output === 'file' ? null : 'utf8',
+						};
+
+						responseData = await callEInvoice(options);
+
+						if (responseData) {
+							const prefix = operation === 'createXRechnung' ? 'xrechnung' : 'einvoice';
+							await pushDocument(responseData, output, `${prefix}-${type.toLowerCase()}.xml`, 'application/xml');
+							continue;
+						}
+					} else if (operation === 'createFacturX') {
+						const templateIdParam = this.getNodeParameter('templateId', i) as any;
+						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
+						const data = this.getNodeParameter('facturxData', i) as string;
+						const profile = this.getNodeParameter('facturxProfile', i, 'basic') as string;
+						const output = this.getNodeParameter('facturxOutput', i, 'base64') as string;
+						const additionalFields = this.getNodeParameter('facturxAdditionalFields', i, {}) as any;
+
+						if (!templateId) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Template is required for Factur-X. The API returns a 422 that does not name the missing field',
+								{ itemIndex: i },
+							);
+						}
+
+						const template: any = {
+							id: Number(templateId),
+							data: parseJSON(data, 'Invoice Data'),
+						};
+						if (additionalFields.versionId) template.version_id = Number(additionalFields.versionId);
+
+						const body: any = {
+							template,
+							profile,
+							output,
+						};
+						if (additionalFields.outputName) body.name = additionalFields.outputName;
+						if (additionalFields.author || additionalFields.language) {
+							body.metadata = {};
+							if (additionalFields.author) body.metadata.author = additionalFields.author;
+							if (additionalFields.language) body.metadata.language = additionalFields.language;
+						}
+
+						const options: IRequestOptions = {
+							method: 'POST' as IHttpRequestMethods,
+							baseURL,
+							url: '/einvoice/facturx',
+							body,
+							json: output !== 'file',
+							encoding: output === 'file' ? null : 'utf8',
+						};
+
+						responseData = await callEInvoice(options);
+
+						// url and viewer return a link rather than a document, so they fall
+						// through to the shared JSON handling below.
+						if (responseData && (output === 'base64' || output === 'file')) {
+							const fallbackName = `${additionalFields.outputName || 'facturx-invoice'}.pdf`;
+							await pushDocument(responseData, output, fallbackName, 'application/pdf');
+							continue;
+						}
+					} else if (operation === 'getEInvoiceSchema') {
+						const options: IRequestOptions = {
+							method: 'GET' as IHttpRequestMethods,
+							baseURL,
+							url: '/einvoice/schema',
+							json: true,
+						};
+
+						responseData = await callEInvoice(options);
 					}
 				} else if (resource === 'conversion') {
 					const conversionOptions = this.getNodeParameter('conversionOptions', i, {}) as any;
