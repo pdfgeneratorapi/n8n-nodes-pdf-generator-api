@@ -60,8 +60,11 @@ This node supports the following operations organized by resource:
 - **Create Factur-X E-Invoice** - Create a Factur-X PDF with the CII XML embedded, rendered from a template
 - **Create XRechnung E-Invoice** - Create an XRechnung 3.0 e-invoice, validated against the German BR-DE rules
 - **Get Schema** - Get the JSON schema of the accepted invoice payload
-  - Base64 and file outputs both attach the document as a binary item named `data`
-  - Validation errors from the API (for example `[BR-DE-2]`) are shown in the node error
+
+Notes for the three Create operations:
+- Base64 and file outputs both attach the document as a binary item named `data`
+- Validation errors from the API (for example `[BR-DE-2]`) are shown in the node error
+- Known API limitations: BT-11, BT-12, BT-19 and attachments are accepted but not written to the output, and an attachment with unpadded base64 returns a 500
 
 ### PDF Services
 - **Add Watermark** - Add text or image watermarks to PDF documents
