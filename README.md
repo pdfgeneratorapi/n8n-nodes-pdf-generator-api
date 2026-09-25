@@ -55,6 +55,17 @@ This node supports the following operations organized by resource:
 - **HTML to PDF** - Convert HTML content directly to PDF
 - **URL to PDF** - Convert a public URL to PDF
 
+### E-Invoice
+- **Create E-Invoice** - Create an EN 16931 e-invoice as UBL or CII XML
+- **Create Factur-X E-Invoice** - Create a Factur-X PDF with the CII XML embedded, rendered from a template
+- **Create XRechnung E-Invoice** - Create an XRechnung 3.0 e-invoice, validated against the German BR-DE rules
+- **Get Schema** - Get the JSON schema of the accepted invoice payload
+
+Notes for the three Create operations:
+- Base64 and file outputs both attach the document as a binary item named `data`
+- Validation errors from the API (for example `[BR-DE-2]`) are shown in the node error
+- Known API limitations: BT-11, BT-12, BT-19 and attachments are accepted but not written to the output, and an attachment with unpadded base64 returns a 500
+
 ### PDF Services
 - **Add Watermark** - Add text or image watermarks to PDF documents
 - **Encrypt Document** - Encrypt PDF documents with password protection
@@ -117,6 +128,16 @@ The node automatically handles JWT token generation using your API credentials. 
 4. Configure paper size and orientation
 5. Specify filename and output format
 
+### E-Invoice Generation
+1. Select **Resource**: E-Invoice
+2. Run **Get Schema** once to see the payload structure (Peppol BIS Billing 3.0 UBL, rooted at `ubl:Invoice`)
+3. Select **Create E-Invoice**, **Create XRechnung E-Invoice** or **Create Factur-X E-Invoice**
+4. Provide the invoice JSON in **Invoice Data**
+5. For Factur-X, choose a template whose fields are mapped to UBL element names (for example `{cbc:ID}`), and pick a **Profile**. The default Basic profile drops item level detail, so use EN 16931 or Extended when lines carry extra attributes
+6. The XML or PDF is attached as binary `data`, ready for an email or upload node
+
+XRechnung is the strictest option: the seller contact (BG-6) and a buyer reference (BT-10) are mandatory, and a missing element fails with the rule ID in the error message.
+
 ### PDF Processing
 - **Watermarking**: Add text or image watermarks with positioning options
 - **Encryption**: Protect PDFs with owner and user passwords
@@ -167,6 +188,12 @@ For workflows that should continue on errors, enable "Continue on Fail" in node 
 * [Expression Language Documentation](https://support.pdfgeneratorapi.com/en/category/expression-language-q203pa/)
 
 ## Version history
+
+### Unreleased
+- **New**: Added E-Invoice resource
+  - Create E-Invoice (EN 16931, UBL or CII), Create Factur-X E-Invoice, Create XRechnung E-Invoice, Get Schema
+  - Base64 and file outputs attach the document as binary `data`
+  - API validation messages are surfaced in the node error instead of a generic HTTP status text
 
 ### 0.4.0
 - **New**: Added Asset resource with QR code generation
