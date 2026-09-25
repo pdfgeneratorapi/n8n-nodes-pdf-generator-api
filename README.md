@@ -12,6 +12,7 @@ PDF Generator API is a powerful service that allows you to generate PDFs from te
 [Compatibility](#compatibility)  
 [Usage](#usage)  
 [Resources](#resources)  
+[Development](#development)  
 [Version history](#version-history)  
 
 ## Installation
@@ -100,8 +101,7 @@ The node automatically handles JWT token generation using your API credentials. 
 
 ## Compatibility
 
-- **Minimum n8n version**: 0.199.0
-- **Tested with**: n8n versions 0.199.0+
+- **Minimum n8n version**: 1.85.0
 - **Node API version**: 1
 
 ## Usage
@@ -187,7 +187,29 @@ For workflows that should continue on errors, enable "Continue on Fail" in node 
 * [Template Editor Guide](https://support.pdfgeneratorapi.com/en/category/components-1ffseaj/)
 * [Expression Language Documentation](https://support.pdfgeneratorapi.com/en/category/expression-language-q203pa/)
 
+## Development
+
+```bash
+npm ci
+npm run hooks:install   # once per clone, runs npm run check before every commit
+npm run check           # build, unit tests, lint and n8n's scanner lint
+```
+
+- `npm test` builds the node and runs the unit tests in `test/`. They run the node against a fake n8n context, so no API credentials are needed.
+- `npm run lint:n8n` runs the lint checks of n8n's community package scanner (`@n8n/scan-community-package`), which n8n runs on every published version of a verified node. The scanner is installed separately in `tools/n8n-scan`.
+- Releases are published by the GitHub Actions workflow when a version tag is pushed: bump `version` in `package.json`, merge to `master`, then push a tag with the same version, for example `git tag 0.5.1 && git push origin 0.5.1`.
+
 ## Version history
+
+### 0.5.1
+- 🔧 **Improved**: Passes n8n's community package scanner, required for verified nodes
+  - Requests use `httpRequestWithAuthentication` instead of the deprecated `requestWithAuthentication`
+  - Output items keep their link to the input item (`pairedItem`)
+  - The credentials have an icon
+- 🐛 **Fixed**: Error messages from the API are shown for file outputs too, not only the HTTP status
+- 🐛 **Fixed**: Workspace Delete returns a success item instead of failing on an empty response
+- 🔧 **Breaking**: Requires n8n 1.85.0 or later
+- 🧪 **New**: Unit tests and a pre-commit hook that runs the same checks as the publish workflow
 
 ### 0.5.0
 - **New**: Added E-Invoice resource

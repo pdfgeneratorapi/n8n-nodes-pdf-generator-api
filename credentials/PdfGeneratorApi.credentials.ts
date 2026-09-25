@@ -10,6 +10,7 @@ import {
 export class PdfGeneratorApi implements ICredentialType {
 	name = 'pdfGeneratorApi';
 	displayName = 'PDF Generator API';
+	icon = { light: 'file:pdfgeneratorapi.svg', dark: 'file:pdfgeneratorapi.svg' } as const;
 	documentationUrl = 'https://docs.pdfgeneratorapi.com/v4';
 	properties: INodeProperties[] = [
 		{

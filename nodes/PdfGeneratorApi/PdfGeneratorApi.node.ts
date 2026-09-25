@@ -6,11 +6,13 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 	IHttpRequestMethods,
-	IRequestOptions,
+	IHttpRequestOptions,
+	IN8nHttpFullResponse,
 	INodeListSearchResult,
+	JsonObject,
 } from 'n8n-workflow';
 
-import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 export class PdfGeneratorApi implements INodeType {
 	description: INodeTypeDescription = {
@@ -24,8 +26,8 @@ export class PdfGeneratorApi implements INodeType {
 		defaults: {
 			name: 'PDF Generator API',
 		},
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		usableAsTool: true,
 		credentials: [
 			{
@@ -2130,7 +2132,7 @@ export class PdfGeneratorApi implements INodeType {
 					const credentials = await this.getCredentials('pdfGeneratorApi');
 					const baseURL = (credentials.baseUrl as string) || 'https://us1.pdfgeneratorapi.com/api/v4';
 
-					const options: IRequestOptions = {
+					const options: IHttpRequestOptions = {
 						method: 'GET',
 						baseURL,
 						url: '/templates',
@@ -2141,7 +2143,7 @@ export class PdfGeneratorApi implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdfGeneratorApi', options);
 
 					if (response && response.response) {
 						for (const template of response.response) {
@@ -2191,27 +2193,50 @@ export class PdfGeneratorApi implements INodeType {
 			}
 		};
 
-		// Field errors from a 422 body ({ message, errors: { field: [...] } }). n8n keeps the
-		// body only in NodeApiError.messages, as "<status> - <body>". Errors the message
-		// already repeats are skipped.
-		const validationDetails = (messages: unknown, message: string) => {
-			if (!Array.isArray(messages)) return '';
-			for (const entry of messages) {
-				if (typeof entry !== 'string' || entry.indexOf('{') === -1) continue;
-				try {
-					const body = JSON.parse(entry.slice(entry.indexOf('{')));
-					const errors = body && body.errors;
-					if (!errors || typeof errors !== 'object') continue;
-					const parts = (Array.isArray(errors) ? errors.map((e: unknown) => ['', e]) : Object.entries(errors))
-						.map(([field, e]) => [field, ([] as unknown[]).concat(e).map(String).filter((t) => !message.includes(t)).join(' ')])
-						.filter(([, text]) => text)
-						.map(([field, text]) => (field ? `${field}: ${text}` : text));
-					if (parts.length) return ` (${parts.join('; ')})`;
-				} catch (error) {
-					// not a JSON body
-				}
+		// Field errors from a 422 body ({ message, errors: { field: [...] } }). Errors the
+		// message already repeats are skipped.
+		const validationDetails = (errors: unknown, message: string) => {
+			if (!errors || typeof errors !== 'object') return '';
+			const parts = (Array.isArray(errors) ? errors.map((e: unknown) => ['', e]) : Object.entries(errors))
+				.map(([field, e]) => [field, ([] as unknown[]).concat(e).map(String).filter((t) => !message.includes(t)).join(' ')])
+				.filter(([, text]) => text)
+				.map(([field, text]) => (field ? `${field}: ${text}` : text));
+			return parts.length ? ` (${parts.join('; ')})` : '';
+		};
+
+		// File outputs receive an error body as a Buffer, so it is decoded before the JSON is read
+		const parseErrorBody = (body: unknown): JsonObject => {
+			const text = Buffer.isBuffer(body) ? body.toString('utf8') : body;
+			if (typeof text !== 'string') return (text ?? {}) as JsonObject;
+			try {
+				return JSON.parse(text);
+			} catch (error) {
+				// Not JSON. Plain text is kept as the message, an HTML page (e.g. from a proxy) is dropped
+				return text.trimStart().startsWith('<') ? {} : { message: text.trim() };
 			}
-			return '';
+		};
+
+		// Error responses are handled here rather than by n8n, which only keeps the status text
+		// for a Buffer body. errorPrefix swaps n8n's generic status message for the API's own
+		// message and field errors.
+		const apiRequest = async (options: IHttpRequestOptions, itemIndex: number, errorPrefix?: string): Promise<any> => {
+			const response = (await this.helpers.httpRequestWithAuthentication.call(this, 'pdfGeneratorApi', {
+				...options,
+				returnFullResponse: true,
+				ignoreHttpStatusErrors: true,
+			})) as IN8nHttpFullResponse;
+
+			if (response.statusCode >= 400) {
+				const body = parseErrorBody(response.body);
+				const apiMessage = typeof body.message === 'string' ? body.message : '';
+				throw new NodeApiError(this.getNode(), body, {
+					httpCode: String(response.statusCode),
+					itemIndex,
+					message: errorPrefix && apiMessage ? `${errorPrefix}: ${apiMessage}${validationDetails(body.errors, apiMessage)}` : undefined,
+				});
+			}
+
+			return options.returnFullResponse ? response : response.body;
 		};
 
 		// Helper function to get correct MIME type for document formats
@@ -2265,16 +2290,16 @@ export class PdfGeneratorApi implements INodeType {
 							if (logoUrl) body.logo_url = logoUrl;
 						}
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/assets/qrcode',
 							body,
 							json: qrOutputFormat !== 'file',
-							encoding: qrOutputFormat === 'file' ? null : 'utf8',
+							encoding: qrOutputFormat === 'file' ? 'arraybuffer' : 'json',
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 						// Handle output based on format
 						if (responseData) {
@@ -2297,6 +2322,7 @@ export class PdfGeneratorApi implements INodeType {
 										fileSize: responseData.length,
 									},
 									binary: binaryData,
+									pairedItem: { item: i },
 								});
 							} else {
 								// base64 format returns JSON only
@@ -2306,6 +2332,7 @@ export class PdfGeneratorApi implements INodeType {
 										format: qrOutputFormat,
 										...responseData,
 									},
+									pairedItem: { item: i },
 								});
 							}
 							continue;
@@ -2315,27 +2342,8 @@ export class PdfGeneratorApi implements INodeType {
 					// Surface the API's own error message. For /einvoice/xrechnung this is the
 					// only useful debugging signal, e.g. [BR-DE-5] Das Element "Seller contact
 					// point" (BT-41) muss uebermittelt werden.
-					const callEInvoice = async (requestOptions: IRequestOptions) => {
-						try {
-							return await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', requestOptions);
-						} catch (error) {
-							// requestWithAuthentication throws a NodeApiError whose message is n8n's
-							// generic status text. Its description is the API's "message" for a JSON
-							// body, or the raw body otherwise (e.g. an HTML page from a proxy), and
-							// messages keeps "<status> - <body>". Rethrow the same error so httpCode
-							// survives for error workflows, and only swap in the API's text.
-							// Checked by shape, not instanceof: the node can load its own copy of
-							// n8n-workflow, and then instanceof NodeApiError is always false.
-							if (error.httpCode !== undefined) {
-								const description = typeof error.description === 'string' ? error.description : '';
-								if (description && !description.trimStart().startsWith('<')) {
-									error.message = `PDF Generator API e-invoice request failed: ${description}${validationDetails(error.messages, description)}`;
-								}
-								error.context = { ...(error.context || {}), itemIndex: i };
-							}
-							throw error;
-						}
-					};
+					const callEInvoice = async (requestOptions: IHttpRequestOptions) =>
+						await apiRequest(requestOptions, i, 'PDF Generator API e-invoice request failed');
 
 					// Attach the document as binary under the standard "data" key, so the next
 					// node can upload or email it without a Code node in between.
@@ -2356,6 +2364,7 @@ export class PdfGeneratorApi implements INodeType {
 									fileSize: payload.length,
 								},
 								binary,
+								pairedItem: { item: i },
 							});
 							return;
 						}
@@ -2380,6 +2389,7 @@ export class PdfGeneratorApi implements INodeType {
 								...rest,
 							},
 							binary,
+							pairedItem: { item: i },
 						});
 					};
 
@@ -2403,13 +2413,13 @@ export class PdfGeneratorApi implements INodeType {
 							output,
 						};
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: operation === 'createXRechnung' ? '/einvoice/xrechnung' : '/einvoice',
 							body,
 							json: output !== 'file',
-							encoding: output === 'file' ? null : 'utf8',
+							encoding: output === 'file' ? 'arraybuffer' : 'json',
 						};
 
 						responseData = await callEInvoice(options);
@@ -2458,13 +2468,13 @@ export class PdfGeneratorApi implements INodeType {
 							if (additionalFields.language) body.metadata.language = additionalFields.language;
 						}
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/einvoice/facturx',
 							body,
 							json: output !== 'file',
-							encoding: output === 'file' ? null : 'utf8',
+							encoding: output === 'file' ? 'arraybuffer' : 'json',
 						};
 
 						responseData = await callEInvoice(options);
@@ -2477,7 +2487,7 @@ export class PdfGeneratorApi implements INodeType {
 							continue;
 						}
 					} else if (operation === 'getEInvoiceSchema') {
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: '/einvoice/schema',
@@ -2548,31 +2558,31 @@ export class PdfGeneratorApi implements INodeType {
 						const htmlContent = this.getNodeParameter('htmlContent', i) as string;
 						body.content = htmlContent;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/conversion/html2pdf',
 							body,
 							json: body.output !== 'file', // Don't parse as JSON when expecting raw binary
-							encoding: body.output === 'file' ? null : 'utf8', // Handle binary data correctly
+							encoding: body.output === 'file' ? 'arraybuffer' : 'json', // Handle binary data correctly
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 					} else if (operation === 'urlToPdf') {
 						// URL to PDF conversion
 						const url = this.getNodeParameter('url', i) as string;
 						body.url = url;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/conversion/url2pdf',
 							body,
 							json: body.output !== 'file', // Don't parse as JSON when expecting raw binary
-							encoding: body.output === 'file' ? null : 'utf8', // Handle binary data correctly
+							encoding: body.output === 'file' ? 'arraybuffer' : 'json', // Handle binary data correctly
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 					}
 
 										// Handle output based on what the API actually returns
@@ -2598,6 +2608,7 @@ export class PdfGeneratorApi implements INodeType {
 									fileSize: responseData.length,
 								},
 								binary: binaryData,
+								pairedItem: { item: i },
 							});
 						} else {
 							// base64 and url formats return JSON only
@@ -2608,6 +2619,7 @@ export class PdfGeneratorApi implements INodeType {
 									format: outputFormat,
 									...responseData,
 								},
+								pairedItem: { item: i },
 							});
 						}
 						continue;
@@ -2625,7 +2637,7 @@ export class PdfGeneratorApi implements INodeType {
 						if (documentListOptions.page) qs.page = documentListOptions.page;
 						if (documentListOptions.per_page) qs.per_page = documentListOptions.per_page;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: '/documents',
@@ -2633,33 +2645,33 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'get') {
 						// Get document by public ID
 						const publicId = this.getNodeParameter('publicId', i) as string;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: `/documents/${publicId}`,
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'delete') {
 						// Delete document by public ID
 						const publicId = this.getNodeParameter('publicId', i) as string;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'DELETE' as IHttpRequestMethods,
 							baseURL,
 							url: `/documents/${publicId}`,
 							json: true,
 						};
 
-						await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						await apiRequest(options, i);
 
 						// For delete operations, API returns 204 No Content on success
 						// Set responseData to a success response to avoid the "operation not supported" error
@@ -2691,16 +2703,16 @@ export class PdfGeneratorApi implements INodeType {
 						if (additionalFields.outputName) body.name = additionalFields.outputName;
 						if (additionalFields.testing !== undefined) body.testing = additionalFields.testing;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/documents/generate',
 							body,
 							json: output !== 'file', // Don't parse as JSON when expecting raw binary
-							encoding: output === 'file' ? null : 'utf8', // Handle binary data correctly
+							encoding: output === 'file' ? 'arraybuffer' : 'json', // Handle binary data correctly
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 						// Handle output based on format for document generation
 						if (responseData && output !== 'url' && output !== 'viewer') {
@@ -2723,6 +2735,7 @@ export class PdfGeneratorApi implements INodeType {
 										fileSize: responseData.length,
 									},
 									binary: binaryData,
+									pairedItem: { item: i },
 								});
 								continue;
 							} else {
@@ -2734,6 +2747,7 @@ export class PdfGeneratorApi implements INodeType {
 										format: output,
 										...responseData,
 									},
+									pairedItem: { item: i },
 								});
 								continue;
 							}
@@ -2772,7 +2786,7 @@ export class PdfGeneratorApi implements INodeType {
 						if (additionalFields.outputName) body.name = additionalFields.outputName;
 						if (additionalFields.testing !== undefined) body.testing = additionalFields.testing;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/documents/generate/async',
@@ -2780,7 +2794,7 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'generateBatch') {
 						// Generate multiple PDF documents in batch
@@ -2808,21 +2822,21 @@ export class PdfGeneratorApi implements INodeType {
 						if (additionalFields.outputName) body.name = additionalFields.outputName;
 						if (additionalFields.testing !== undefined) body.testing = additionalFields.testing;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/documents/generate/batch',
 							body,
 							json: output !== 'file', // Don't parse as JSON when expecting raw binary
-							encoding: output === 'file' ? null : 'utf8', // Handle binary data correctly
+							encoding: output === 'file' ? 'arraybuffer' : 'json', // Handle binary data correctly
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 						// Handle output based on format for batch generation
 						if (responseData && output !== 'url' && output !== 'viewer') {
 							if (output === 'file') {
-								// For file output, responseData is always a Buffer when json=false and encoding=null
+								// For file output, responseData is always a Buffer when encoding is arraybuffer
 								const binaryData: any = {};
 								const fileName = `${additionalFields.outputName || 'batch-documents'}.${format}`;
 
@@ -2840,6 +2854,7 @@ export class PdfGeneratorApi implements INodeType {
 										fileSize: responseData.length,
 									},
 									binary: binaryData,
+									pairedItem: { item: i },
 								});
 								continue;
 							} else {
@@ -2851,6 +2866,7 @@ export class PdfGeneratorApi implements INodeType {
 										format: output,
 										...responseData,
 									},
+									pairedItem: { item: i },
 								});
 								continue;
 							}
@@ -2893,7 +2909,7 @@ export class PdfGeneratorApi implements INodeType {
 						if (additionalFields.outputName) body.name = additionalFields.outputName;
 						if (additionalFields.testing !== undefined) body.testing = additionalFields.testing;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/documents/generate/batch/async',
@@ -2901,7 +2917,7 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 					}
 
 				} else if (resource === 'template') {
@@ -2917,7 +2933,7 @@ export class PdfGeneratorApi implements INodeType {
 						if (templateListOptions.page) qs.page = templateListOptions.page;
 						if (templateListOptions.per_page) qs.per_page = templateListOptions.per_page;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: '/templates',
@@ -2925,21 +2941,21 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'get') {
 						// Get template by ID
 						const templateIdParam = this.getNodeParameter('templateId', i) as any;
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: `/templates/${templateId}`,
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'create') {
 						// Create new template
@@ -2947,7 +2963,7 @@ export class PdfGeneratorApi implements INodeType {
 
 						const body = parseJSON(templateConfiguration, 'templateConfiguration');
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/templates',
@@ -2955,7 +2971,7 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'update') {
 						// Update existing template
@@ -2965,7 +2981,7 @@ export class PdfGeneratorApi implements INodeType {
 
 						const body = parseJSON(templateConfiguration, 'templateConfiguration');
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'PUT' as IHttpRequestMethods,
 							baseURL,
 							url: `/templates/${templateId}`,
@@ -2973,21 +2989,21 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'delete') {
 						// Delete template
 						const templateIdParam = this.getNodeParameter('templateId', i) as any;
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'DELETE' as IHttpRequestMethods,
 							baseURL,
 							url: `/templates/${templateId}`,
 							json: true,
 						};
 
-						await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						await apiRequest(options, i);
 
 						// For delete operations, API returns 204 No Content on success
 						responseData = {
@@ -3008,7 +3024,7 @@ export class PdfGeneratorApi implements INodeType {
 							throw new NodeOperationError(this.getNode(), 'Template configuration must be a valid JSON object', { itemIndex: i });
 						}
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/templates/validate',
@@ -3016,32 +3032,32 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'getDataFields') {
 						// Get template data fields
 						const templateIdParam = this.getNodeParameter('templateId', i) as any;
 						const templateId = typeof templateIdParam === 'string' ? templateIdParam : templateIdParam.value;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: `/templates/${templateId}/data`,
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'getTemplateSchema') {
 						// Get template schema
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: '/templates/schema',
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'copy') {
 						// Copy template
@@ -3052,7 +3068,7 @@ export class PdfGeneratorApi implements INodeType {
 						const body: any = {};
 						if (newTemplateName) body.name = newTemplateName;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: `/templates/${templateId}/copy`,
@@ -3060,7 +3076,7 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'openEditor') {
 						// Open template editor
@@ -3072,7 +3088,7 @@ export class PdfGeneratorApi implements INodeType {
 						if (editorOptions.data) body.data = parseJSON(editorOptions.data, 'editorOptions.data');
 						if (editorOptions.language) body.language = editorOptions.language;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: `/templates/${templateId}/editor`,
@@ -3080,7 +3096,7 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 					}
 
 				} else if (resource === 'pdfServices') {
@@ -3153,16 +3169,16 @@ export class PdfGeneratorApi implements INodeType {
 						// Add watermark object to body
 						body.watermark = watermark;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/pdfservices/watermark',
 							body,
 							json: outputFormat !== 'file',
-							encoding: outputFormat === 'file' ? null : 'utf8',
+							encoding: outputFormat === 'file' ? 'arraybuffer' : 'json',
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 										} else if (operation === 'encrypt') {
 						// Encrypt PDF document
@@ -3172,16 +3188,16 @@ export class PdfGeneratorApi implements INodeType {
 						if (ownerPassword) body.owner_password = ownerPassword;
 						if (userPassword) body.user_password = userPassword;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/pdfservices/encrypt',
 							body,
 							json: outputFormat !== 'file',
-							encoding: outputFormat === 'file' ? null : 'utf8',
+							encoding: outputFormat === 'file' ? 'arraybuffer' : 'json',
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 										} else if (operation === 'decrypt') {
 						// Decrypt PDF document
@@ -3189,20 +3205,20 @@ export class PdfGeneratorApi implements INodeType {
 
 						if (decryptionPassword) body.owner_password = decryptionPassword;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/pdfservices/decrypt',
 							body,
 							json: outputFormat !== 'file',
-							encoding: outputFormat === 'file' ? null : 'utf8',
+							encoding: outputFormat === 'file' ? 'arraybuffer' : 'json',
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'extractFormFields') {
 						// Extract form fields from PDF document
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/pdfservices/form/fields',
@@ -3210,7 +3226,7 @@ export class PdfGeneratorApi implements INodeType {
 							json: true, // Always return JSON for form fields extraction
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'fillFormFields') {
 						// Fill form fields in PDF document
@@ -3222,30 +3238,30 @@ export class PdfGeneratorApi implements INodeType {
 						// Add form data to the request body
 						body.data = parsedData;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/pdfservices/form/fill',
 							body,
 							json: outputFormat !== 'file',
-							encoding: outputFormat === 'file' ? null : 'utf8',
+							encoding: outputFormat === 'file' ? 'arraybuffer' : 'json',
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'optimize') {
 						// Optimize PDF document
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/pdfservices/optimize',
 							body,
 							json: outputFormat !== 'file',
-							encoding: outputFormat === 'file' ? null : 'utf8',
-							resolveWithFullResponse: true, // Get headers for optimization stats
+							encoding: outputFormat === 'file' ? 'arraybuffer' : 'json',
+							returnFullResponse: true, // Get headers for optimization stats
 						};
 
-						const fullResponse = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						const fullResponse = await apiRequest(options, i);
 						responseData = fullResponse.body;
 
 						// Extract optimization statistics from headers
@@ -3271,6 +3287,7 @@ export class PdfGeneratorApi implements INodeType {
 									operation,
 									...responseData,
 								},
+								pairedItem: { item: i },
 							});
 						} else if (outputFormat === 'file') {
 							// For file output, API returns raw binary PDF data
@@ -3305,6 +3322,7 @@ export class PdfGeneratorApi implements INodeType {
 							returnData.push({
 								json: jsonResponse,
 								binary: binaryData,
+								pairedItem: { item: i },
 							});
 						} else {
 							// base64 and url formats return JSON only
@@ -3327,6 +3345,7 @@ export class PdfGeneratorApi implements INodeType {
 
 							returnData.push({
 								json: jsonResponse,
+								pairedItem: { item: i },
 							});
 						}
 						continue;
@@ -3342,7 +3361,7 @@ export class PdfGeneratorApi implements INodeType {
 						if (workspaceListOptions.page) qs.page = workspaceListOptions.page;
 						if (workspaceListOptions.per_page) qs.per_page = workspaceListOptions.per_page;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: '/workspaces',
@@ -3350,7 +3369,7 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'create') {
 						// Create new workspace
@@ -3360,7 +3379,7 @@ export class PdfGeneratorApi implements INodeType {
 							identifier,
 						};
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'POST' as IHttpRequestMethods,
 							baseURL,
 							url: '/workspaces',
@@ -3368,33 +3387,38 @@ export class PdfGeneratorApi implements INodeType {
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'get') {
 						// Get workspace by identifier
 						const workspaceIdentifier = this.getNodeParameter('workspaceIdentifier', i) as string;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'GET' as IHttpRequestMethods,
 							baseURL,
 							url: `/workspaces/${encodeURIComponent(workspaceIdentifier)}`,
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						responseData = await apiRequest(options, i);
 
 					} else if (operation === 'delete') {
 						// Delete workspace
 						const workspaceIdentifier = this.getNodeParameter('workspaceIdentifier', i) as string;
 
-						const options: IRequestOptions = {
+						const options: IHttpRequestOptions = {
 							method: 'DELETE' as IHttpRequestMethods,
 							baseURL,
 							url: `/workspaces/${encodeURIComponent(workspaceIdentifier)}`,
 							json: true,
 						};
 
-						responseData = await this.helpers.requestWithAuthentication.call(this, 'pdfGeneratorApi', options);
+						// An empty 204 body comes back as '', so report the deletion like the other resources
+						responseData = (await apiRequest(options, i)) || {
+							success: true,
+							message: 'Workspace deleted successfully',
+							workspaceIdentifier,
+						};
 					}
 				}
 
@@ -3418,7 +3442,12 @@ export class PdfGeneratorApi implements INodeType {
 					returnData.push(...executionErrorData);
 					continue;
 				}
-				throw error;
+				// Both constructors return an error of their own type unchanged, so API errors
+				// keep their status code and input errors keep their message
+				if (error instanceof NodeOperationError) {
+					throw new NodeOperationError(this.getNode(), error, { itemIndex: i });
+				}
+				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: i });
 			}
 		}
 
