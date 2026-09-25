@@ -1,0 +1,54 @@
+# Publishes the package to npm with a provenance statement when a version tag is pushed.
+#
+# Since May 1 2026, n8n only accepts verified community nodes that are published
+# from GitHub Actions with npm provenance.
+#
+# One-time setup (npm Trusted Publishing, no secrets needed):
+#   npmjs.com -> package settings -> Trusted Publisher -> GitHub Actions
+#     Organization or user: pdfgeneratorapi
+#     Repository:           n8n-nodes-pdf-generator-api
+#     Workflow filename:    publish.yml
+#
+# Release: bump "version" in package.json, merge to master, then push a
+# matching tag without a "v" prefix (e.g. 0.5.0).
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Check tag matches package.json version
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$PKG_VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      # prepublishOnly runs the build and the prepublish lint
+      - name: Publish
+        run: npm publish --provenance --access public

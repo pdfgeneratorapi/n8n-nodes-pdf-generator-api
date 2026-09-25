@@ -189,7 +189,7 @@ For workflows that should continue on errors, enable "Continue on Fail" in node 
 
 ## Version history
 
-### Unreleased
+### 0.5.0
 - **New**: Added E-Invoice resource
   - Create E-Invoice (EN 16931, UBL or CII), Create Factur-X E-Invoice, Create XRechnung E-Invoice, Get Schema
   - Base64 and file outputs attach the document as binary `data`
