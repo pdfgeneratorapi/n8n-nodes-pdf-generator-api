@@ -1,0 +1,8 @@
+{
+  "name": "n8n-scan",
+  "private": true,
+  "description": "n8n's community package scanner, installed apart from the node so its TypeScript and n8n-workflow versions don't mix with the node's",
+  "dependencies": {
+    "@n8n/scan-community-package": "0.37.0"
+  }
+}

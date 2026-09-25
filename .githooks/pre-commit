@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs the checks the publish workflow runs: build, unit tests, lint and n8n's scanner lint.
+# Enable once per clone with `npm run hooks:install`, skip once with `git commit --no-verify`.
+npm run check
